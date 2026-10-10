@@ -16,7 +16,7 @@ pip install pandas openpyxl
 python3 build_dashboard.py                          # uses data/Avocados_quarterly_2015-2022.xlsx
 python3 build_dashboard.py path/to/new_file.xlsx    # or .xls / .csv
 python3 build_dashboard.py new.csv -o other.html    # custom output path
-python3 build_dashboard.py --cdn                    # load ECharts from cdnjs instead of inlining (~60 KB file, needs internet)
+python3 build_dashboard.py --cdn                    # load ECharts from cdnjs instead of inlining (~90 KB file, needs internet)
 ```
 
 The input needs these columns: `date`, `average_price`, `total_volume`, `type`, `region`.
