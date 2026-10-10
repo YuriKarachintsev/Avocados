@@ -17,10 +17,11 @@
   --border: rgba(11,11,11,0.10);
   --wash: rgba(11,11,11,0.05);
   --accent: #2a78d6;
-  --conv: #2a78d6;      /* conventional: categorical slot 1 (blue) */
-  --org: #eb6834;       /* organic: categorical slot 2 (orange) */
+  --conv: #6250d6;      /* conventional: purple */
+  --org: #f29a4a;       /* organic: light orange */
   --combined: #52514e;  /* both types combined: neutral ink */
-  --r1: #1baf7a; --r2: #eda100; --r3: #e87ba4; --r4: #008300; --r5: #6250d6; --r6: #e34948;
+  /* regional-trend slots: no purple/orange so they never read as a type */
+  --r1: #e34948; --r2: #2a78d6; --r3: #008300; --r4: #e87ba4; --r5: #eda100; --r6: #1baf7a;
   --seq-lo: #cde2fb; --seq-hi: #0d366b;
   --warn-bg: #fff6e0; --warn-ink: #6b4a00;
 }
@@ -29,8 +30,8 @@
     color-scheme: dark;
     --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
     --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --wash: rgba(255,255,255,0.06);
-    --accent: #3987e5; --conv: #3987e5; --org: #d95926; --combined: #c3c2b7;
-    --r1: #199e70; --r2: #c98500; --r3: #d55181; --r4: #008300; --r5: #9085e9; --r6: #e66767;
+    --accent: #3987e5; --conv: #7b6ee6; --org: #cf7a36; --combined: #c3c2b7;
+    --r1: #e66767; --r2: #3987e5; --r3: #008300; --r4: #d55181; --r5: #c98500; --r6: #199e70;
     --seq-lo: #184f95; --seq-hi: #cde2fb;
     --warn-bg: #2e2510; --warn-ink: #f3d48a;
   }
@@ -39,8 +40,8 @@
   color-scheme: dark;
   --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
   --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --wash: rgba(255,255,255,0.06);
-  --accent: #3987e5; --conv: #3987e5; --org: #d95926; --combined: #c3c2b7;
-  --r1: #199e70; --r2: #c98500; --r3: #d55181; --r4: #008300; --r5: #9085e9; --r6: #e66767;
+  --accent: #3987e5; --conv: #7b6ee6; --org: #cf7a36; --combined: #c3c2b7;
+  --r1: #e66767; --r2: #3987e5; --r3: #008300; --r4: #d55181; --r5: #c98500; --r6: #199e70;
   --seq-lo: #184f95; --seq-hi: #cde2fb;
   --warn-bg: #2e2510; --warn-ink: #f3d48a;
 }
@@ -72,6 +73,7 @@ h1 { font-size: 22px; margin: 0 0 4px; font-weight: 650; letter-spacing: -0.01em
 .fgroup { display: flex; flex-direction: column; gap: 4px; }
 .fgroup > label, .flabel { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+option:disabled { color: var(--muted); }
 select, input[type=search], button {
   font: inherit; color: var(--ink); background: var(--surface);
   border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; min-height: 32px;
@@ -100,10 +102,8 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .ms-actions { display: flex; gap: 6px; margin: 6px 0; }
 .ms-actions button { flex: 1; min-height: 28px; padding: 2px 6px; font-size: 12px; }
 .ms-list { max-height: 300px; overflow: auto; }
-.ms-level { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin: 8px 4px 2px; }
 .ms-item { display: flex; align-items: center; gap: 8px; padding: 4px; border-radius: 4px; cursor: pointer; }
 .ms-item:hover { background: var(--wash); }
-.ms-item .lvl { margin-left: auto; font-size: 11px; color: var(--muted); }
 .ms-empty { color: var(--muted); padding: 8px 4px; }
 .notice { max-width: 1480px; margin: 8px auto 0; padding: 0 24px; color: var(--warn-ink); font-size: 13px; }
 .notice:empty { display: none; }
@@ -186,7 +186,7 @@ footer ul { margin: 4px 0; padding-left: 18px; }
     <div class="fgroup">
       <span class="flabel">Presets</span>
       <div class="seg" id="presetSeg">
-        <button data-p="q3">Last 3 quarters</button>
+        <button data-p="q2">Last 2 quarters</button>
         <button data-p="y1">Last year</button>
         <button data-p="all">All</button>
       </div>
@@ -217,8 +217,6 @@ footer ul { margin: 4px 0; padding-left: 18px; }
     <div class="fgroup">
       <span class="flabel">Granularity</span>
       <div class="seg" id="granSeg">
-        <button data-g="W">Weekly</button>
-        <button data-g="M">Monthly</button>
         <button data-g="Q">Quarterly</button>
         <button data-g="Y">Yearly</button>
       </div>
@@ -239,7 +237,7 @@ footer ul { margin: 4px 0; padding-left: 18px; }
       <div class="card-head">
         <div><h2>Price trend</h2><p class="desc">Volume-weighted average price per avocado over time, conventional vs. organic.</p></div>
         <div class="ctl"><label for="maSel">Moving avg</label>
-          <select id="maSel"><option value="0">Off</option><option value="2">2 periods</option><option value="4">4 periods</option></select></div>
+          <select id="maSel"><option value="0">Off</option><option value="2">2 quarters</option><option value="4">4 quarters</option></select></div>
       </div>
       <div class="chart-wrap"><div class="chart" id="cPrice"></div><div class="empty"></div></div>
     </article>
@@ -346,7 +344,6 @@ const T_CONV = TYPES.indexOf("conventional"), T_ORG = TYPES.indexOf("organic");
 const REG = D.regions;                  // [{name, level}]
 const ROWS = D.rows;                    // [dateIdx, typeIdx, regionIdx, price, volume]
 const FREQ = D.freq;                    // native frequency: W, M or Q
-const GRAN_ORDER = ["W", "M", "Q", "Y"];
 const GRAN_NAME = { W: "Weekly", M: "Monthly", Q: "Quarterly", Y: "Yearly" };
 const PERIOD_WORD = { W: "week", M: "month", Q: "quarter", Y: "year" };
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -365,7 +362,7 @@ const DEFAULTS = () => ({
   from: 0, to: ND - 1,
   type: "both",
   regions: new Set(D.defaultRegions),
-  gran: FREQ,
+  gran: "Q",
   ma: 0, heat: "price", reg: "volume", vola: "cv", rt: "price", sc: "norm",
 });
 let S = DEFAULTS();
@@ -459,6 +456,9 @@ function periodsInRange() {
   return { keys, partial: k => counts.get(k) < expected.get(k) ? `${counts.get(k)} of ${expected.get(k)} observations in range` : "" };
 }
 
+// Dropdown / KPI label for one observation date, e.g. "Q1 - 2015".
+const quarterName = di => `Q${DATES[di].q} - ${DATES[di].y}`;
+
 /* ---------------- charts ---------------- */
 const charts = {};
 function chartFor(id) {
@@ -510,7 +510,7 @@ function renderKPIs() {
   const cur = kpiBlock(S.from, S.to);
   const hasPrev = S.from - n >= 0;
   const prev = hasPrev ? kpiBlock(S.from - n, S.from - 1) : null;
-  const prevLbl = hasPrev ? `vs. ${periodLabel(periodKey(S.from - n, FREQ), FREQ)} – ${periodLabel(periodKey(S.from - 1, FREQ), FREQ)}` : "No earlier period of equal length in the data";
+  const prevLbl = hasPrev ? `vs. ${quarterName(S.from - n)} to ${quarterName(S.from - 1)}` : "No earlier period of equal length in the data";
   const pct = (a, b) => (a != null && b) ? a / b - 1 : null;
   const arrow = v => v == null || !isFinite(v) ? "" : v > 0 ? "▲ " : v < 0 ? "▼ " : "■ ";
   const card = (label, value, delta, note) => `<div class="kpi"><div class="k-label">${label}</div><div class="k-value">${value}</div>
@@ -538,7 +538,7 @@ function renderPrice() {
     const vals = keys.map(k => price(g.get(k)));
     series.push({ name: typeName(t), type: "line", data: vals, color: typeColor(t), symbol: "circle", symbolSize: 6,
       showSymbol: keys.length <= 40, lineStyle: { width: 2 }, connectNulls: false });
-    if (S.ma > 1) {
+    if (S.ma > 1 && S.gran === "Q") {
       const accs = keys.map(k => g.get(k));
       const ma = keys.map((_, i) => {
         if (i < S.ma - 1) return null;
@@ -546,7 +546,7 @@ function renderPrice() {
         for (let j = i - S.ma + 1; j <= i; j++) { if (!accs[j]) return null; v += accs[j].v; pv += accs[j].pv; }
         return v > 0 ? pv / v : null;
       });
-      series.push({ name: `${typeName(t)} · ${S.ma}-period MA`, type: "line", data: ma, color: typeColor(t), symbol: "none",
+      series.push({ name: `${typeName(t)} · ${S.ma}-quarter MA`, type: "line", data: ma, color: typeColor(t), symbol: "none",
         lineStyle: { width: 4, opacity: 0.35 }, z: 1 });
     }
   });
@@ -728,7 +728,7 @@ function renderRegion() {
     grid: { left: 140, right: 64, top: 30, bottom: 36 },
     tooltip: Object.assign(baseOption().tooltip, { trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(127,127,127,.08)" } },
       formatter: ps => { const r = order[ps[0].dataIndex]; const a = byReg.get(r);
-        let s = `<b>${REG[r].name}</b> <span style="color:${C.muted}">${REG[r].level}</span>`;
+        let s = `<b>${REG[r].name}</b>`;
         if (ps.length > 1) ps.forEach(p => { s += tipRow(p.color, p.seriesName, M.fmt(p.value)); });
         s += tipRow("transparent", "Avg price (all selected types)", fmtUSD(price(a)));
         s += tipRow("transparent", "Volume", fmtInt(a.v) + " avocados");
@@ -959,41 +959,41 @@ function regionLabel() {
 function renderRegionList() {
   const q = document.getElementById("msSearch").value.trim().toLowerCase();
   const list = document.getElementById("msList");
-  let html = "", lastLevel = null, shown = 0;
-  REG.forEach((r, i) => {
-    if (q && !r.name.toLowerCase().includes(q) && !r.level.toLowerCase().includes(q)) return;
-    if (r.level !== lastLevel) { html += `<div class="ms-level">${r.level}</div>`; lastLevel = r.level; }
-    html += `<label class="ms-item"><input type="checkbox" data-r="${i}" ${S.regions.has(i) ? "checked" : ""}> ${r.name}</label>`;
+  let html = "", shown = 0;
+  REG.map((r, i) => i).sort((a, b) => REG[a].name.localeCompare(REG[b].name)).forEach(i => {
+    if (q && !REG[i].name.toLowerCase().includes(q)) return;
+    html += `<label class="ms-item"><input type="checkbox" data-r="${i}" ${S.regions.has(i) ? "checked" : ""}> ${REG[i].name}</label>`;
     shown++;
   });
   list.innerHTML = shown ? html : `<div class="ms-empty">No regions match “${q.replace(/</g, "&lt;")}”</div>`;
 }
 function syncControls() {
-  const opts = DATES.map(d => `<option value="${d.i}">${d.s}</option>`).join("");
+  const opts = DATES.map(d => `<option value="${d.i}">${quarterName(d.i)}</option>`).join("");
   const fs = document.getElementById("fromSel"), ts = document.getElementById("toSel");
   if (!fs.options.length) { fs.innerHTML = opts; ts.innerHTML = opts; }
+  // An end before the start (or a start after the end) cannot be picked.
+  [...fs.options].forEach(o => { o.disabled = +o.value > S.to; });
+  [...ts.options].forEach(o => { o.disabled = +o.value < S.from; });
   fs.value = S.from; ts.value = S.to;
   document.querySelectorAll("#typeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.t === S.type));
-  document.querySelectorAll("#granSeg button").forEach(b => {
-    const ok = GRAN_ORDER.indexOf(b.dataset.g) >= GRAN_ORDER.indexOf(FREQ);
-    b.disabled = !ok;
-    b.title = ok ? "" : `Not available: the data is ${GRAN_NAME[FREQ].toLowerCase()}`;
-    b.setAttribute("aria-pressed", b.dataset.g === S.gran);
-  });
+  document.querySelectorAll("#granSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.g === S.gran));
   const preset = presetRange();
   document.querySelectorAll("#presetSeg button").forEach(b => { const p = preset[b.dataset.p]; b.setAttribute("aria-pressed", p[0] === S.from && p[1] === S.to); });
   [["heatSeg", "heat"], ["regSeg", "reg"], ["volaSeg", "vola"], ["rtSeg", "rt"], ["scSeg", "sc"]].forEach(([el, key]) =>
     document.querySelectorAll(`#${el} button`).forEach(b => b.setAttribute("aria-pressed", b.dataset.m === S[key])));
-  document.getElementById("maSel").value = S.ma;
+  const maSel = document.getElementById("maSel");
+  maSel.value = S.ma;
+  maSel.disabled = S.gran !== "Q";
+  maSel.title = S.gran === "Q" ? "" : "Moving average is available in the quarterly view";
   document.getElementById("msLabel").textContent = regionLabel();
   renderRegionList();
 }
-// Presets by calendar quarter: last 3 quarters and last 4 quarters (trailing year) in the data.
+// Presets by calendar quarter: last 2 quarters and last 4 quarters (trailing year) in the data.
 function presetRange() {
   const qk = di => DATES[di].y * 4 + DATES[di].q - 1;
   const lastQ = qk(ND - 1);
   const firstFrom = n => { for (let i = 0; i < ND; i++) if (qk(i) > lastQ - n) return i; return 0; };
-  return { q3: [firstFrom(3), ND - 1], y1: [firstFrom(4), ND - 1], all: [0, ND - 1] };
+  return { q2: [firstFrom(2), ND - 1], y1: [firstFrom(4), ND - 1], all: [0, ND - 1] };
 }
 function notices() {
   const msgs = [];
@@ -1012,8 +1012,8 @@ function renderAll() {
 }
 
 function on(sel, ev, fn) { document.querySelectorAll(sel).forEach(el => el.addEventListener(ev, fn)); }
-on("#fromSel", "change", e => { S.from = +e.target.value; if (S.from > S.to) S.to = S.from; renderAll(); });
-on("#toSel", "change", e => { S.to = +e.target.value; if (S.to < S.from) S.from = S.to; renderAll(); });
+on("#fromSel", "change", e => { S.from = Math.min(+e.target.value, S.to); renderAll(); });
+on("#toSel", "change", e => { S.to = Math.max(+e.target.value, S.from); renderAll(); });
 on("#presetSeg button", "click", e => { [S.from, S.to] = presetRange()[e.currentTarget.dataset.p]; renderAll(); });
 on("#typeSeg button", "click", e => { S.type = e.currentTarget.dataset.t; renderAll(); });
 on("#granSeg button", "click", e => { S.gran = e.currentTarget.dataset.g; renderAll(); });
@@ -1059,10 +1059,9 @@ if (D.meta.synthetic) {
   document.getElementById("banner").hidden = false;
   document.getElementById("bannerText").textContent = "Heads up: according to the source file's Notes sheet, most of this dataset is SYNTHETIC (generated for illustration). Only the first date's rows are original. Do not read the figures as real market data.";
 }
-const lv = {}; REG.forEach(r => (lv[r.level] = lv[r.level] || []).push(r.name));
 document.getElementById("footer").innerHTML =
   `<div><b>Source:</b> ${D.meta.source} · built ${D.meta.built} · ${ROWS.length.toLocaleString()} rows.</div>` +
-  `<div><b>Region levels:</b> ${Object.entries(lv).map(([k, v]) => `${k} (${v.length})`).join(", ")}. Regions that sit inside another selected region are never summed with it.</div>` +
+  `<div><b>Regions:</b> ${REG.length} regions. ${D.contains.length ? "A region that sits inside another selected region is left out of totals, so nothing is double counted." : "They don't overlap, so combining them never double counts."}</div>` +
   `<div><b>Method:</b> Average prices are weighted by volume (Σ price×volume ÷ Σ volume). Revenue is an estimate (Σ price × volume). ` +
   `Volume totals add up the observations in range. Each observation is one dated reading, not a full-period total.</div>` +
   (D.meta.notes.length ? `<div style="margin-top:6px"><b>Notes from the source file:</b><ul>${D.meta.notes.map(n => `<li>${n.replace(/</g, "&lt;")}</li>`).join("")}</ul></div>` : "") +

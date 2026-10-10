@@ -31,7 +31,7 @@ On each run, the script:
 
 It prints a short data report, then writes `dashboard.html`.
 
-All aggregation happens in the browser from the embedded rows, so new regions, dates or a finer frequency (for example weekly data) are picked up automatically.
+All aggregation happens in the browser from the embedded rows, so new regions and dates are picked up automatically. Charts always group by quarter or year, even if the source data is weekly or monthly.
 
 ## Files
 
@@ -48,13 +48,16 @@ All aggregation happens in the browser from the embedded rows, so new regions, d
 - **Average price** is volume-weighted: Σ(price × volume) ÷ Σ volume, across regions, types and periods.
 - **Estimated revenue** = Σ(price × volume). It is an estimate, not reported revenue.
 - **Volume** totals add up the observations in the selected range. Each row is one dated reading, so a "yearly" total is the sum of that year's readings, not a full-year sales figure.
+- **Presets:** "Last 2 quarters", "Last year" (last 4 quarters) and "All". The start date can't be after the end date: the dropdowns grey out invalid choices.
+- **Moving average** (price trend) spans 2 or 4 quarters and is available in the quarterly view.
+- **Colours:** purple = conventional, light orange = organic, everywhere.
 - **KPI change** compares against the period of equal length immediately before the selection. With "All" selected there is no earlier period.
 - **Year-over-year** compares the same seasons (quarters) in the previous year.
-- **Region levels**: regions are tagged National, Multi-state region, State or Metro. A region inside another selected region (e.g. a metro inside its state, or anything inside `TotalUS`) is left out of totals so nothing is double counted. In this dataset, California (state) and the 13 metros don't overlap, so the default is all 14 regions combined. That is a sample total, not a national figure.
+- **Regions** are shown as one flat list. Internally each region is still tagged (national, multi-state, state, metro). If a future file adds overlapping regions such as `TotalUS`, a region inside another selected one is left out of totals so nothing is double counted. The 14 regions in this file don't overlap, so the default is all 14 combined. That is a sample total, not a national figure.
 - **Elasticity** is the slope of a log-log fit of volume on price. It is a rough approximation, not a causal estimate. The default "within-region" view first removes each region/type's average level.
 
 ## Caveats about this dataset
 
 - The workbook's `Notes` sheet says rows 29–896 are **synthetic** and not real market figures. The dashboard shows a banner saying so.
-- The data is **quarterly** (4 Jan/Apr/Jul/Oct, 2015–2022), so weekly and monthly granularity are greyed out. Seasonality is shown by quarter.
+- The data is **quarterly** (4 Jan/Apr/Jul/Oct, 2015–2022). Granularity is Quarterly or Yearly, and seasonality is shown by quarter.
 - Volume grows over time while prices follow a yearly index. That trend mixes into the price–volume fit, which is why organic shows a slightly positive "elasticity".
