@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avocado Market Dashboard</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11,11,11,0.10);
+  --wash: rgba(11,11,11,0.05);
+  --accent: #2a78d6;
+  --conv: #2a78d6;      /* conventional: categorical slot 1 (blue) */
+  --org: #eb6834;       /* organic: categorical slot 2 (orange) */
+  --combined: #52514e;  /* both types combined: neutral ink */
+  --r1: #1baf7a; --r2: #eda100; --r3: #e87ba4; --r4: #008300; --r5: #6250d6; --r6: #e34948;
+  --seq-lo: #cde2fb; --seq-hi: #0d366b;
+  --warn-bg: #fff6e0; --warn-ink: #6b4a00;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --wash: rgba(255,255,255,0.06);
+    --accent: #3987e5; --conv: #3987e5; --org: #d95926; --combined: #c3c2b7;
+    --r1: #199e70; --r2: #c98500; --r3: #d55181; --r4: #008300; --r5: #9085e9; --r6: #e66767;
+    --seq-lo: #184f95; --seq-hi: #cde2fb;
+    --warn-bg: #2e2510; --warn-ink: #f3d48a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --wash: rgba(255,255,255,0.06);
+  --accent: #3987e5; --conv: #3987e5; --org: #d95926; --combined: #c3c2b7;
+  --r1: #199e70; --r2: #c98500; --r3: #d55181; --r4: #008300; --r5: #9085e9; --r6: #e66767;
+  --seq-lo: #184f95; --seq-hi: #cde2fb;
+  --warn-bg: #2e2510; --warn-ink: #f3d48a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--page); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+header.top { padding: 20px 24px 8px; max-width: 1480px; margin: 0 auto; }
+h1 { font-size: 22px; margin: 0 0 4px; font-weight: 650; letter-spacing: -0.01em; }
+.sub { color: var(--ink-2); margin: 0; }
+.banner {
+  max-width: 1480px; margin: 10px auto 0; padding: 0 24px;
+}
+.banner div {
+  background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px; font-size: 13px;
+}
+/* ---------- filter bar ---------- */
+.filters {
+  position: sticky; top: 0; z-index: 20; background: var(--page);
+  border-bottom: 1px solid var(--border);
+}
+.filters-inner {
+  max-width: 1480px; margin: 0 auto; padding: 12px 24px;
+  display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-end;
+}
+.fgroup { display: flex; flex-direction: column; gap: 4px; }
+.fgroup > label, .flabel { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+select, input[type=search], button {
+  font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; min-height: 32px;
+}
+button { cursor: pointer; }
+button:hover { background: var(--wash); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; border-radius: 0; border-right: 1px solid var(--border); min-height: 30px; padding: 4px 10px; background: transparent; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.seg button:disabled { color: var(--muted); cursor: not-allowed; background: transparent; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.btn-ghost { background: transparent; }
+.btn-reset { font-weight: 600; }
+/* region multiselect */
+.ms { position: relative; }
+.ms-btn { min-width: 230px; text-align: left; display: flex; justify-content: space-between; gap: 8px; }
+.ms-panel {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 300px; z-index: 30;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 8px;
+}
+.ms.open .ms-panel { display: block; }
+.ms-panel input[type=search] { width: 100%; }
+.ms-actions { display: flex; gap: 6px; margin: 6px 0; }
+.ms-actions button { flex: 1; min-height: 28px; padding: 2px 6px; font-size: 12px; }
+.ms-list { max-height: 300px; overflow: auto; }
+.ms-level { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin: 8px 4px 2px; }
+.ms-item { display: flex; align-items: center; gap: 8px; padding: 4px; border-radius: 4px; cursor: pointer; }
+.ms-item:hover { background: var(--wash); }
+.ms-item .lvl { margin-left: auto; font-size: 11px; color: var(--muted); }
+.ms-empty { color: var(--muted); padding: 8px 4px; }
+.notice { max-width: 1480px; margin: 8px auto 0; padding: 0 24px; color: var(--warn-ink); font-size: 13px; }
+.notice:empty { display: none; }
+/* ---------- layout ---------- */
+main { max-width: 1480px; margin: 0 auto; padding: 16px 24px 40px; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.kpi .k-label { color: var(--ink-2); font-size: 13px; }
+.kpi .k-value { font-size: 28px; font-weight: 650; margin: 2px 0; letter-spacing: -0.01em; }
+.kpi .k-delta { font-size: 13px; color: var(--ink-2); }
+.kpi .k-delta b { color: var(--ink); font-weight: 600; }
+.kpi .k-note { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px 10px; min-width: 0; display: flex; flex-direction: column;
+}
+.card.wide { grid-column: 1 / -1; }
+.card-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.card h2 { font-size: 15px; margin: 0; font-weight: 620; }
+.card .desc { color: var(--ink-2); font-size: 12.5px; margin: 2px 0 6px; }
+.card .ctl { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; }
+.card .ctl .seg button { min-height: 26px; padding: 2px 8px; font-size: 12px; }
+.card select { min-height: 28px; padding: 2px 6px; font-size: 12px; }
+.chart-wrap { position: relative; flex: 1; }
+.chart { width: 100%; height: 340px; }
+.chart.tall { height: 460px; }
+.empty {
+  position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+  text-align: center; color: var(--muted); padding: 20px; background: var(--surface);
+}
+.chart-wrap.is-empty .empty { display: flex; }
+.foot { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.stat-line { font-size: 12.5px; color: var(--ink-2); margin: 2px 0 4px; }
+.stat-line b { color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+.chip { font-size: 12px; min-height: 26px; padding: 2px 10px; border-radius: 999px; }
+.chip[aria-pressed="true"] { border-color: var(--ink-2); font-weight: 600; }
+details.table { margin-top: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; }
+details.table summary { cursor: pointer; font-weight: 600; }
+.tbl-wrap { max-height: 420px; overflow: auto; margin-top: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { padding: 5px 8px; border-bottom: 1px solid var(--grid); text-align: right; white-space: nowrap; }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+th { position: sticky; top: 0; background: var(--surface); color: var(--ink-2); font-weight: 600; }
+footer { max-width: 1480px; margin: 0 auto; padding: 0 24px 32px; color: var(--muted); font-size: 12px; }
+footer ul { margin: 4px 0; padding-left: 18px; }
+@media (max-width: 1100px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 860px) {
+  .grid { grid-template-columns: minmax(0,1fr); }
+  .filters { position: static; }
+  header.top, .banner, .filters-inner, main, footer, .notice { padding-left: 16px; padding-right: 16px; }
+}
+@media (max-width: 480px) {
+  .kpis { grid-template-columns: minmax(0,1fr); }
+  .ms-btn { min-width: 0; width: 100%; }
+}
+</style>
+<!--__ECHARTS__-->
+</head>
+<body>
+<header class="top">
+  <h1>Avocado Market Dashboard</h1>
+  <p class="sub" id="subtitle"></p>
+</header>
+<div class="banner" id="banner" hidden><div id="bannerText"></div></div>
+
+<section class="filters" aria-label="Filters">
+  <div class="filters-inner">
+    <div class="fgroup">
+      <label for="fromSel">Date range</label>
+      <div class="row">
+        <select id="fromSel" aria-label="From"></select>
+        <span style="color:var(--muted)">to</span>
+        <select id="toSel" aria-label="To"></select>
+      </div>
+    </div>
+    <div class="fgroup">
+      <span class="flabel">Presets</span>
+      <div class="seg" id="presetSeg">
+        <button data-p="q3">Last 3 quarters</button>
+        <button data-p="y1">Last year</button>
+        <button data-p="all">All</button>
+      </div>
+    </div>
+    <div class="fgroup">
+      <span class="flabel">Type</span>
+      <div class="seg" id="typeSeg">
+        <button data-t="conventional"><span class="swatch" style="background:var(--conv)"></span>Conventional</button>
+        <button data-t="organic"><span class="swatch" style="background:var(--org)"></span>Organic</button>
+        <button data-t="both">Both</button>
+      </div>
+    </div>
+    <div class="fgroup">
+      <span class="flabel">Region</span>
+      <div class="ms" id="regionMs">
+        <button class="ms-btn" id="msBtn" aria-haspopup="listbox" aria-expanded="false"><span id="msLabel"></span><span aria-hidden="true">▾</span></button>
+        <div class="ms-panel" role="dialog" aria-label="Choose regions">
+          <input type="search" id="msSearch" placeholder="Search regions…" aria-label="Search regions">
+          <div class="ms-actions">
+            <button id="msDefault" type="button">Default</button>
+            <button id="msAll" type="button">Select shown</button>
+            <button id="msNone" type="button">Clear</button>
+          </div>
+          <div class="ms-list" id="msList" role="listbox" aria-multiselectable="true"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fgroup">
+      <span class="flabel">Granularity</span>
+      <div class="seg" id="granSeg">
+        <button data-g="W">Weekly</button>
+        <button data-g="M">Monthly</button>
+        <button data-g="Q">Quarterly</button>
+        <button data-g="Y">Yearly</button>
+      </div>
+    </div>
+    <div class="fgroup">
+      <span class="flabel">&nbsp;</span>
+      <button class="btn-reset" id="resetBtn" type="button">Reset filters</button>
+    </div>
+  </div>
+</section>
+<div class="notice" id="notice" role="status"></div>
+
+<main>
+  <section class="kpis" id="kpis" aria-label="Key figures"></section>
+
+  <section class="grid">
+    <article class="card">
+      <div class="card-head">
+        <div><h2>Price trend</h2><p class="desc">Volume-weighted average price per avocado over time, conventional vs. organic.</p></div>
+        <div class="ctl"><label for="maSel">Moving avg</label>
+          <select id="maSel"><option value="0">Off</option><option value="2">2 periods</option><option value="4">4 periods</option></select></div>
+      </div>
+      <div class="chart-wrap"><div class="chart" id="cPrice"></div><div class="empty"></div></div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <div><h2>Volume trend</h2><p class="desc">Total avocados sold per period, stacked by type.</p></div>
+      </div>
+      <div class="chart-wrap"><div class="chart" id="cVolume"></div><div class="empty"></div></div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <div><h2>Organic premium</h2><p class="desc">How much more organic costs than conventional, in USD (top) and as a % of the conventional price (bottom).</p></div>
+      </div>
+      <div class="chart-wrap"><div class="chart" id="cPremium"></div><div class="empty"></div></div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <div><h2>Seasonality</h2><p class="desc" id="seasonDesc"></p></div>
+      </div>
+      <div class="chart-wrap"><div class="chart" id="cSeason"></div><div class="empty"></div></div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <div><h2 id="heatTitle">Year × season heatmap</h2><p class="desc">Each cell is one year and season. More intense colour means a higher value (see scale). Selected types are combined.</p></div>
+        <div class="ctl"><div class="seg" id="heatSeg">
+          <button data-m="price">Price</button><button data-m="volume">Volume</button><button data-m="revenue">Revenue</button></div></div>
+      </div>
+      <div class="chart-wrap"><div class="chart" id="cHeat"></div><div class="empty"></div></div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <div><h2>Year-over-year growth</h2><p class="desc">Change in average price (top) and volume (bottom) vs. the same seasons a year earlier, by type.</p></div>
+      </div>
+      <div class="chart-wrap"><div class="chart" id="cYoY"></div><div class="empty"></div></div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <div><h2>Regional comparison</h2><p class="desc">Regions ranked by the chosen metric over the selected period.</p></div>
+        <div class="ctl"><div class="seg" id="regSeg">
+          <button data-m="price">Avg price</button><button data-m="volume">Volume</button><button data-m="revenue">Est. revenue</button></div></div>
+      </div>
+      <div class="chart-wrap"><div class="chart tall" id="cRegion"></div><div class="empty"></div></div>
+    </article>
+
+    <article class="card">
+      <div class="card-head">
+        <div><h2>Price volatility</h2><p class="desc">How much each region's price swings across periods, at the current granularity.</p></div>
+        <div class="ctl"><div class="seg" id="volaSeg">
+          <button data-m="cv">Coeff. of variation</button><button data-m="sd">Std dev ($)</button></div></div>
+      </div>
+      <div class="chart-wrap"><div class="chart tall" id="cVola"></div><div class="empty"></div></div>
+    </article>
+
+    <article class="card wide">
+      <div class="card-head">
+        <div><h2>Regional trends</h2><p class="desc">Compare up to 6 of the selected regions over time. Click a region to add or remove it. Selected types are combined.</p></div>
+        <div class="ctl"><div class="seg" id="rtSeg">
+          <button data-m="price">Avg price</button><button data-m="volume">Volume</button><button data-m="revenue">Est. revenue</button></div></div>
+      </div>
+      <div class="chips" id="rtChips"></div>
+      <div class="chart-wrap"><div class="chart" id="cRegTrend"></div><div class="empty"></div></div>
+    </article>
+
+    <article class="card wide">
+      <div class="card-head">
+        <div><h2>Price vs. volume (demand relationship)</h2>
+          <p class="desc">Each dot is one region, type and period. The lines are log-log fits by type. <b>The elasticity is a rough approximation, not a causal estimate.</b></p></div>
+        <div class="ctl"><div class="seg" id="scSeg">
+          <button data-m="norm">Within-region</button><button data-m="raw">Raw values</button></div></div>
+      </div>
+      <div class="stat-line" id="elastLine"></div>
+      <div class="chart-wrap"><div class="chart tall" id="cScatter"></div><div class="empty"></div></div>
+      <div class="foot" id="scFoot"></div>
+    </article>
+  </section>
+
+  <details class="table" id="tableBox">
+    <summary>Data table (filtered, at current granularity)</summary>
+    <div class="tbl-wrap"><table id="dataTable"></table></div>
+  </details>
+</main>
+<footer id="footer"></footer>
+
+<script type="application/json" id="data">/*__DATA__*/</script>
+<script>
+(function () {
+"use strict";
+const D = JSON.parse(document.getElementById("data").textContent);
+
+/* ---------------- static lookups ---------------- */
+const DATES = D.dates.map((s, i) => {
+  const y = +s.slice(0, 4), m = +s.slice(5, 7);
+  return { i, s, y, m, q: Math.ceil(m / 3) };
+});
+const ND = DATES.length;
+const TYPES = D.types;                  // e.g. ["conventional","organic"]
+const T_CONV = TYPES.indexOf("conventional"), T_ORG = TYPES.indexOf("organic");
+const REG = D.regions;                  // [{name, level}]
+const ROWS = D.rows;                    // [dateIdx, typeIdx, regionIdx, price, volume]
+const FREQ = D.freq;                    // native frequency: W, M or Q
+const GRAN_ORDER = ["W", "M", "Q", "Y"];
+const GRAN_NAME = { W: "Weekly", M: "Monthly", Q: "Quarterly", Y: "Yearly" };
+const PERIOD_WORD = { W: "week", M: "month", Q: "quarter", Y: "year" };
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+// Seasonal unit: quarter-of-year for quarterly data, month-of-year otherwise.
+const SEASON_BY_Q = FREQ === "Q";
+const seasonOf = d => SEASON_BY_Q ? d.q : d.m;
+const SEASON_KEYS = SEASON_BY_Q ? [1, 2, 3, 4] : [1,2,3,4,5,6,7,8,9,10,11,12];
+const seasonLabel = k => SEASON_BY_Q ? "Q" + k : MONTHS[k - 1];
+
+// Parent -> descendants; used to avoid summing across overlapping levels.
+const ANCESTORS = REG.map(() => new Set());
+D.contains.forEach(([p, c]) => ANCESTORS[c].add(p));
+
+/* ---------------- state ---------------- */
+const DEFAULTS = () => ({
+  from: 0, to: ND - 1,
+  type: "both",
+  regions: new Set(D.defaultRegions),
+  gran: FREQ,
+  ma: 0, heat: "price", reg: "volume", vola: "cv", rt: "price", sc: "norm",
+});
+let S = DEFAULTS();
+const rtSlots = new Map();   // region index -> colour slot (0..5), kept while picked
+let rtTouched = false;
+
+/* ---------------- formatting ---------------- */
+function fmtBig(v, digits) {
+  if (v == null || !isFinite(v)) return "–";
+  const a = Math.abs(v);
+  const d = digits == null ? 1 : digits;
+  if (a >= 1e9) return (v / 1e9).toFixed(d) + "B";
+  if (a >= 1e6) return (v / 1e6).toFixed(d) + "M";
+  if (a >= 1e3) return (v / 1e3).toFixed(d) + "K";
+  return v.toFixed(a < 10 && v % 1 ? 1 : 0);
+}
+const fmtUSD = v => v == null || !isFinite(v) ? "–" : "$" + v.toFixed(2);
+const fmtUSDBig = v => v == null || !isFinite(v) ? "–" : (v < 0 ? "-$" : "$") + fmtBig(Math.abs(v));
+const fmtPct = (v, d = 1) => v == null || !isFinite(v) ? "–" : (v * 100).toFixed(d) + "%";
+const fmtSignedPct = (v, d = 1) => v == null || !isFinite(v) ? "–" : (v >= 0 ? "+" : "−") + Math.abs(v * 100).toFixed(d) + "%";
+const fmtInt = v => v == null || !isFinite(v) ? "–" : Math.round(v).toLocaleString("en-US");
+const METRIC = {
+  price:   { label: "Avg price", axis: "USD per avocado", fmt: fmtUSD, axisFmt: v => "$" + v.toFixed(2) },
+  volume:  { label: "Volume", axis: "Avocados (units)", fmt: v => fmtBig(v, 2), axisFmt: v => fmtBig(v, 0) },
+  revenue: { label: "Est. revenue", axis: "Estimated USD", fmt: v => fmtUSDBig(v), axisFmt: v => fmtUSDBig(v) },
+};
+
+/* ---------------- colours from CSS tokens ---------------- */
+let C = {};
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = n => cs.getPropertyValue(n).trim();
+  C = {
+    surface: g("--surface"), ink: g("--ink"), ink2: g("--ink-2"), muted: g("--muted"),
+    grid: g("--grid"), axis: g("--axis"), conv: g("--conv"), org: g("--org"), combined: g("--combined"),
+    reg: [g("--r1"), g("--r2"), g("--r3"), g("--r4"), g("--r5"), g("--r6")],
+    seq: [g("--seq-lo"), g("--seq-hi")],
+  };
+}
+const typeColor = t => t === T_CONV ? C.conv : t === T_ORG ? C.org : C.combined;
+const typeName = t => TYPES[t].charAt(0).toUpperCase() + TYPES[t].slice(1);
+
+/* ---------------- aggregation core ---------------- */
+function selTypes() {
+  if (S.type === "both") return TYPES.map((_, i) => i);
+  return [TYPES.indexOf(S.type)];
+}
+// Regions used for totals: drop any region whose ancestor is also selected,
+// so overlapping levels (e.g. a state and its metros) are never summed.
+function effRegions(set = S.regions) {
+  const out = new Set();
+  set.forEach(r => { let covered = false; ANCESTORS[r].forEach(a => { if (set.has(a)) covered = true; }); if (!covered) out.add(r); });
+  return out;
+}
+function filterRows({ from = S.from, to = S.to, types = selTypes(), regions = effRegions() } = {}) {
+  const ts = new Set(types);
+  return ROWS.filter(r => r[0] >= from && r[0] <= to && ts.has(r[1]) && regions.has(r[2]));
+}
+function acc() { return { v: 0, pv: 0, n: 0, dates: new Set() }; }
+function add(a, r) { a.v += r[4]; a.pv += r[3] * r[4]; a.n++; a.dates.add(r[0]); }
+const price = a => a && a.v > 0 ? a.pv / a.v : null;   // volume-weighted
+function group(rows, keyFn) {
+  const m = new Map();
+  for (const r of rows) { const k = keyFn(r); let a = m.get(k); if (!a) { a = acc(); m.set(k, a); } add(a, r); }
+  return m;
+}
+function total(rows) { const a = acc(); rows.forEach(r => add(a, r)); return a; }
+
+// Period keys at the chosen granularity.
+function periodKey(di, g = S.gran) {
+  const d = DATES[di];
+  if (g === "Y") return d.y;
+  if (g === "Q") return d.y * 10 + d.q;
+  if (g === "M") return d.y * 100 + d.m;
+  return di;
+}
+function periodLabel(k, g = S.gran) {
+  if (g === "Y") return String(k);
+  if (g === "Q") return Math.floor(k / 10) + " Q" + (k % 10);
+  if (g === "M") return MONTHS[k % 100 - 1] + " " + Math.floor(k / 100);
+  return DATES[k].s;
+}
+function periodsInRange() {
+  const keys = [], seen = new Set(), counts = new Map(), expected = new Map();
+  for (let di = S.from; di <= S.to; di++) {
+    const k = periodKey(di);
+    if (!seen.has(k)) { seen.add(k); keys.push(k); }
+    counts.set(k, (counts.get(k) || 0) + 1);
+  }
+  for (let di = 0; di < ND; di++) { const k = periodKey(di); if (seen.has(k)) expected.set(k, (expected.get(k) || 0) + 1); }
+  return { keys, partial: k => counts.get(k) < expected.get(k) ? `${counts.get(k)} of ${expected.get(k)} observations in range` : "" };
+}
+
+/* ---------------- charts ---------------- */
+const charts = {};
+function chartFor(id) {
+  if (!charts[id]) charts[id] = echarts.init(document.getElementById(id), null, { renderer: "canvas" });
+  return charts[id];
+}
+function setEmpty(id, msg) {
+  const wrap = document.getElementById(id).parentElement;
+  wrap.classList.toggle("is-empty", !!msg);
+  wrap.querySelector(".empty").textContent = msg || "";
+  if (msg && charts[id]) charts[id].clear();
+  return !!msg;
+}
+function axisBase(extra) {
+  return Object.assign({
+    axisLine: { lineStyle: { color: C.axis } },
+    axisTick: { show: false },
+    axisLabel: { color: C.muted, fontSize: 11 },
+    splitLine: { lineStyle: { color: C.grid, type: "solid" } },
+    nameTextStyle: { color: C.muted, fontSize: 11 },
+  }, extra || {});
+}
+function baseOption(extra) {
+  return Object.assign({
+    animationDuration: 300,
+    textStyle: { fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif", color: C.ink },
+    legend: { top: 0, right: 0, textStyle: { color: C.ink2, fontSize: 12 }, itemWidth: 14, itemHeight: 8, icon: "roundRect" },
+    tooltip: {
+      backgroundColor: C.surface, borderColor: C.axis, textStyle: { color: C.ink, fontSize: 12 },
+      extraCssText: "box-shadow:0 4px 14px rgba(0,0,0,.15);border-radius:6px;",
+    },
+  }, extra || {});
+}
+const dot = c => `<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${c};margin-right:6px"></span>`;
+function tipRow(color, name, val) { return `<div style="display:flex;gap:14px;justify-content:space-between"><span>${dot(color)}${name}</span><b>${val}</b></div>`; }
+const NO_DATA = "No data for the current filters. Widen the date range or choose more regions.";
+
+/* 1. KPI cards ------------------------------------------------------------ */
+function kpiBlock(from, to) {
+  const rows = filterRows({ from, to });
+  const t = total(rows);
+  const allTypes = filterRows({ from, to, types: TYPES.map((_, i) => i) });
+  const all = total(allTypes), org = total(allTypes.filter(r => r[1] === T_ORG));
+  return { price: price(t), volume: t.v, revenue: t.pv, share: all.v > 0 ? org.v / all.v : null, n: rows.length };
+}
+function renderKPIs() {
+  const el = document.getElementById("kpis");
+  const n = S.to - S.from + 1;
+  const cur = kpiBlock(S.from, S.to);
+  const hasPrev = S.from - n >= 0;
+  const prev = hasPrev ? kpiBlock(S.from - n, S.from - 1) : null;
+  const prevLbl = hasPrev ? `vs. ${periodLabel(periodKey(S.from - n, FREQ), FREQ)} – ${periodLabel(periodKey(S.from - 1, FREQ), FREQ)}` : "No earlier period of equal length in the data";
+  const pct = (a, b) => (a != null && b) ? a / b - 1 : null;
+  const arrow = v => v == null || !isFinite(v) ? "" : v > 0 ? "▲ " : v < 0 ? "▼ " : "■ ";
+  const card = (label, value, delta, note) => `<div class="kpi"><div class="k-label">${label}</div><div class="k-value">${value}</div>
+    <div class="k-delta">${delta}</div><div class="k-note">${note}</div></div>`;
+  if (!cur.n) { el.innerHTML = card("No data", "–", "", NO_DATA).repeat(1); return; }
+  const dPct = (a, b) => { const v = pct(a, b); return hasPrev && prev.n ? `<b>${arrow(v)}${fmtSignedPct(v)}</b> ${prevLbl}` : prevLbl; };
+  const dShare = hasPrev && prev.share != null && cur.share != null
+    ? `<b>${arrow(cur.share - prev.share)}${(cur.share - prev.share >= 0 ? "+" : "−") + Math.abs((cur.share - prev.share) * 100).toFixed(2)} pp</b> ${prevLbl}` : prevLbl;
+  el.innerHTML =
+    card("Average price", fmtUSD(cur.price), dPct(cur.price, prev && prev.price), "USD per avocado, volume-weighted") +
+    card("Total volume", fmtBig(cur.volume, 2), dPct(cur.volume, prev && prev.volume), "Avocados, sum of observations in range") +
+    card("Estimated revenue", fmtUSDBig(cur.revenue), dPct(cur.revenue, prev && prev.revenue), "Estimate: Σ price × volume") +
+    card("Organic share of volume", fmtPct(cur.share, 2), dShare, "Organic ÷ all types, selected regions");
+}
+
+/* 2. Price trend ------------------------------------------------------------ */
+function renderPrice() {
+  const id = "cPrice";
+  const rows = filterRows();
+  if (setEmpty(id, rows.length ? "" : NO_DATA)) return;
+  const { keys, partial } = periodsInRange();
+  const series = [];
+  selTypes().forEach(t => {
+    const g = group(rows.filter(r => r[1] === t), r => periodKey(r[0]));
+    const vals = keys.map(k => price(g.get(k)));
+    series.push({ name: typeName(t), type: "line", data: vals, color: typeColor(t), symbol: "circle", symbolSize: 6,
+      showSymbol: keys.length <= 40, lineStyle: { width: 2 }, connectNulls: false });
+    if (S.ma > 1) {
+      const accs = keys.map(k => g.get(k));
+      const ma = keys.map((_, i) => {
+        if (i < S.ma - 1) return null;
+        let v = 0, pv = 0;
+        for (let j = i - S.ma + 1; j <= i; j++) { if (!accs[j]) return null; v += accs[j].v; pv += accs[j].pv; }
+        return v > 0 ? pv / v : null;
+      });
+      series.push({ name: `${typeName(t)} · ${S.ma}-period MA`, type: "line", data: ma, color: typeColor(t), symbol: "none",
+        lineStyle: { width: 4, opacity: 0.35 }, z: 1 });
+    }
+  });
+  chartFor(id).setOption(baseOption({
+    grid: { left: 56, right: 16, top: 40, bottom: 36 },
+    tooltip: Object.assign(baseOption().tooltip, { trigger: "axis", axisPointer: { type: "line", lineStyle: { color: C.axis } },
+      formatter: ps => { const k = keys[ps[0].dataIndex]; let h = `<b>${periodLabel(k)}</b>`; const p = partial(k); if (p) h += `<div style="color:${C.muted}">${p}</div>`;
+        ps.forEach(p => { h += tipRow(p.color, p.seriesName, p.value == null ? "–" : "$" + p.value.toFixed(3)); }); return h; } }),
+    xAxis: axisBase({ type: "category", data: keys.map(k => periodLabel(k)), boundaryGap: false, splitLine: { show: false } }),
+    yAxis: axisBase({ type: "value", name: "USD per avocado", scale: true, axisLabel: { color: C.muted, fontSize: 11, formatter: v => "$" + v.toFixed(2) } }),
+    series,
+  }), true);
+}
+
+/* 3. Volume trend ------------------------------------------------------------ */
+function renderVolume() {
+  const id = "cVolume";
+  const rows = filterRows();
+  if (setEmpty(id, rows.length ? "" : NO_DATA)) return;
+  const { keys, partial } = periodsInRange();
+  const series = selTypes().map(t => {
+    const g = group(rows.filter(r => r[1] === t), r => periodKey(r[0]));
+    return { name: typeName(t), type: "bar", stack: "v", data: keys.map(k => g.get(k) ? g.get(k).v : null), color: typeColor(t),
+      barMaxWidth: 28, itemStyle: { borderColor: C.surface, borderWidth: 1 } };
+  });
+  // Round the outer end of the top segment only.
+  series[series.length - 1].itemStyle.borderRadius = [3, 3, 0, 0];
+  chartFor(id).setOption(baseOption({
+    grid: { left: 56, right: 16, top: 40, bottom: 36 },
+    tooltip: Object.assign(baseOption().tooltip, { trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(127,127,127,.08)" } },
+      formatter: ps => { const k = keys[ps[0].dataIndex]; let h = `<b>${periodLabel(k)}</b>`; const p = partial(k); if (p) h += `<div style="color:${C.muted}">${p}</div>`;
+        let tot = 0; ps.forEach(p => { tot += p.value || 0; h += tipRow(p.color, p.seriesName, fmtInt(p.value) + " avocados"); });
+        if (ps.length > 1) { h += tipRow("transparent", "Total", fmtInt(tot)); const o = ps.find(p => p.seriesName === "Organic"); if (o && tot) h += tipRow("transparent", "Organic share", fmtPct(o.value / tot, 2)); }
+        return h; } }),
+    xAxis: axisBase({ type: "category", data: keys.map(k => periodLabel(k)), splitLine: { show: false } }),
+    yAxis: axisBase({ type: "value", name: "Avocados (units)", axisLabel: { color: C.muted, fontSize: 11, formatter: v => fmtBig(v, 0) } }),
+    series,
+  }), true);
+}
+
+/* 4. Organic premium ------------------------------------------------------------ */
+function renderPremium() {
+  const id = "cPremium";
+  if (T_CONV < 0 || T_ORG < 0) { setEmpty(id, "This dataset does not have both types."); return; }
+  if (S.type !== "both") { setEmpty(id, "The premium compares both types. Set the Type filter to “Both” to see it."); return; }
+  const rows = filterRows();
+  if (setEmpty(id, rows.length ? "" : NO_DATA)) return;
+  const { keys } = periodsInRange();
+  const gc = group(rows.filter(r => r[1] === T_CONV), r => periodKey(r[0]));
+  const go = group(rows.filter(r => r[1] === T_ORG), r => periodKey(r[0]));
+  const pc = keys.map(k => price(gc.get(k))), po = keys.map(k => price(go.get(k)));
+  const abs = keys.map((_, i) => pc[i] != null && po[i] != null ? po[i] - pc[i] : null);
+  const rel = keys.map((_, i) => abs[i] != null && pc[i] ? abs[i] / pc[i] : null);
+  const labels = keys.map(k => periodLabel(k));
+  chartFor(id).setOption(baseOption({
+    legend: { show: false },
+    grid: [{ left: 56, right: 16, top: 26, height: "34%" }, { left: 56, right: 16, top: "60%", bottom: 36 }],
+    axisPointer: { link: [{ xAxisIndex: "all" }] },
+    title: [
+      { text: "Premium, USD per avocado", left: 0, top: 0, textStyle: { fontSize: 12, fontWeight: 500, color: C.ink2 } },
+      { text: "Premium, % of conventional price", left: 0, top: "52%", textStyle: { fontSize: 12, fontWeight: 500, color: C.ink2 } },
+    ],
+    tooltip: Object.assign(baseOption().tooltip, { trigger: "axis", formatter: ps => { const i = ps[0].dataIndex; return `<b>${labels[i]}</b>` +
+      tipRow(C.org, "Organic price", fmtUSD(po[i])) + tipRow(C.conv, "Conventional price", fmtUSD(pc[i])) +
+      tipRow(C.combined, "Premium ($)", abs[i] == null ? "–" : "$" + abs[i].toFixed(3)) + tipRow(C.combined, "Premium (%)", fmtPct(rel[i])); } }),
+    xAxis: [axisBase({ type: "category", data: labels, gridIndex: 0, axisLabel: { show: false }, splitLine: { show: false } }),
+            axisBase({ type: "category", data: labels, gridIndex: 1, splitLine: { show: false } })],
+    yAxis: [axisBase({ type: "value", gridIndex: 0, scale: true, axisLabel: { color: C.muted, fontSize: 11, formatter: v => "$" + v.toFixed(2) } }),
+            axisBase({ type: "value", gridIndex: 1, scale: true, axisLabel: { color: C.muted, fontSize: 11, formatter: v => (v * 100).toFixed(0) + "%" } })],
+    series: [
+      { name: "Premium ($)", type: "line", xAxisIndex: 0, yAxisIndex: 0, data: abs, color: C.org, symbolSize: 5, showSymbol: keys.length <= 40, lineStyle: { width: 2 },
+        areaStyle: { opacity: 0.08 } },
+      { name: "Premium (%)", type: "line", xAxisIndex: 1, yAxisIndex: 1, data: rel, color: C.org, symbolSize: 5, showSymbol: keys.length <= 40, lineStyle: { width: 2 } },
+    ],
+  }), true);
+}
+
+/* 5a. Seasonality profile ------------------------------------------------------------ */
+function renderSeason() {
+  const id = "cSeason";
+  document.getElementById("seasonDesc").textContent = SEASON_BY_Q
+    ? "Average price (top) and volume (bottom) by quarter of the year, across all years in range. The data is quarterly, so seasons are quarters. Organic is only ~3% of volume, so its volume bars are small. Hover to see exact values."
+    : "Average price (top) and volume (bottom) by month of the year, across all years in range.";
+  const rows = filterRows();
+  if (setEmpty(id, rows.length ? "" : NO_DATA)) return;
+  const labels = SEASON_KEYS.map(seasonLabel);
+  const pSeries = [], vSeries = [];
+  selTypes().forEach(t => {
+    const sub = rows.filter(r => r[1] === t);
+    const g = group(sub, r => seasonOf(DATES[r[0]]));
+    // Volume: mean per observation date in that season (so seasons with more years in range aren't inflated).
+    const pv = SEASON_KEYS.map(k => price(g.get(k)));
+    const vv = SEASON_KEYS.map(k => g.get(k) ? g.get(k).v / g.get(k).dates.size : null);
+    pSeries.push({ name: typeName(t), type: "bar", xAxisIndex: 0, yAxisIndex: 0, data: pv, color: typeColor(t), barMaxWidth: 22, barGap: "15%",
+      itemStyle: { borderRadius: [3, 3, 0, 0] } });
+    vSeries.push({ name: typeName(t), type: "bar", xAxisIndex: 1, yAxisIndex: 1, data: vv, color: typeColor(t), barMaxWidth: 22, barGap: "15%",
+      itemStyle: { borderRadius: [3, 3, 0, 0] } });
+  });
+  chartFor(id).setOption(baseOption({
+    grid: [{ left: 56, right: 16, top: 44, height: "30%" }, { left: 56, right: 16, top: "62%", bottom: 30 }],
+    title: [
+      { text: "Avg price, USD per avocado", left: 0, top: 22, textStyle: { fontSize: 12, fontWeight: 500, color: C.ink2 } },
+      { text: "Avg volume per observation, avocados", left: 0, top: "53%", textStyle: { fontSize: 12, fontWeight: 500, color: C.ink2 } },
+    ],
+    legend: { top: 0, right: 0, left: "auto", textStyle: { color: C.ink2, fontSize: 12 }, itemWidth: 14, itemHeight: 8, icon: "roundRect" },
+    axisPointer: { link: [{ xAxisIndex: "all" }] },
+    tooltip: Object.assign(baseOption().tooltip, { trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(127,127,127,.08)" } },
+      formatter: ps => { let h = `<b>${labels[ps[0].dataIndex]}</b>`; ps.forEach(p => { h += tipRow(p.color, p.seriesName + (p.seriesIndex >= pSeries.length ? " volume" : " price"),
+        p.seriesIndex >= pSeries.length ? fmtInt(p.value) : fmtUSD(p.value)); }); return h; } }),
+    xAxis: [axisBase({ type: "category", data: labels, gridIndex: 0, splitLine: { show: false } }),
+            axisBase({ type: "category", data: labels, gridIndex: 1, splitLine: { show: false } })],
+    yAxis: [axisBase({ type: "value", gridIndex: 0, axisLabel: { color: C.muted, fontSize: 11, formatter: v => "$" + v.toFixed(2) } }),
+            axisBase({ type: "value", gridIndex: 1, axisLabel: { color: C.muted, fontSize: 11, formatter: v => fmtBig(v, 0) } })],
+    series: pSeries.concat(vSeries),
+  }), true);
+}
+
+/* 5b. Year x season heatmap ------------------------------------------------------------ */
+function renderHeat() {
+  const id = "cHeat";
+  document.getElementById("heatTitle").textContent = SEASON_BY_Q ? "Year × quarter heatmap" : "Year × month heatmap";
+  const rows = filterRows();
+  if (setEmpty(id, rows.length ? "" : NO_DATA)) return;
+  const years = [...new Set(rows.map(r => DATES[r[0]].y))].sort();
+  const g = group(rows, r => DATES[r[0]].y * 100 + seasonOf(DATES[r[0]]));
+  const M = METRIC[S.heat];
+  const data = [];
+  years.forEach((y, yi) => SEASON_KEYS.forEach((s, si) => {
+    const a = g.get(y * 100 + s); if (!a) return;
+    const v = S.heat === "price" ? price(a) : S.heat === "volume" ? a.v : a.pv;
+    data.push([si, yi, v]);
+  }));
+  const vals = data.map(d => d[2]);
+  chartFor(id).setOption(baseOption({
+    grid: { left: 48, right: 16, top: 10, bottom: 64 },
+    tooltip: Object.assign(baseOption().tooltip, { trigger: "item", formatter: p => `<b>${years[p.value[1]]} ${seasonLabel(SEASON_KEYS[p.value[0]])}</b>` +
+      tipRow(p.color, M.label + (S.heat === "revenue" ? " (estimate)" : ""), S.heat === "volume" ? fmtInt(p.value[2]) + " avocados" : S.heat === "price" ? "$" + p.value[2].toFixed(3) : "$" + fmtInt(p.value[2])) }),
+    xAxis: axisBase({ type: "category", data: SEASON_KEYS.map(seasonLabel), splitArea: { show: false }, splitLine: { show: false } }),
+    yAxis: axisBase({ type: "category", data: years.map(String), inverse: true, splitLine: { show: false } }),
+    visualMap: { min: Math.min(...vals), max: Math.max(...vals), calculable: false, orient: "horizontal", left: "center", bottom: 0, itemWidth: 12, itemHeight: 180,
+      inRange: { color: C.seq }, text: [M.axisFmt(Math.max(...vals)), M.axisFmt(Math.min(...vals))], showLabel: false,
+      textStyle: { color: C.muted, fontSize: 11 }, formatter: v => M.axisFmt(v) },
+    series: [{ type: "heatmap", data, itemStyle: { borderColor: C.surface, borderWidth: 2, borderRadius: 3 },
+      emphasis: { itemStyle: { borderColor: C.ink, borderWidth: 1 } } }],
+  }), true);
+}
+
+/* 6. Regional comparison ------------------------------------------------------------ */
+function renderRegion() {
+  const id = "cRegion";
+  const regs = [...S.regions];   // per-region bars: every selected region, each on its own
+  const rows = filterRows({ regions: new Set(regs) });
+  if (setEmpty(id, rows.length ? "" : NO_DATA)) return;
+  const M = METRIC[S.reg];
+  const byReg = group(rows, r => r[2]);
+  const metricOf = a => !a ? null : S.reg === "price" ? price(a) : S.reg === "volume" ? a.v : a.pv;
+  const order = regs.filter(r => byReg.get(r)).sort((a, b) => metricOf(byReg.get(a)) - metricOf(byReg.get(b)));   // ascending: largest at top
+  const names = order.map(r => REG[r].name);
+  let series;
+  const types = selTypes();
+  if (S.reg !== "price" && types.length > 1) {
+    // Additive metrics: stack by type so the type colours carry through.
+    series = types.map((t, ti) => {
+      const g = group(rows.filter(r => r[1] === t), r => r[2]);
+      return { name: typeName(t), type: "bar", stack: "r", color: typeColor(t), barMaxWidth: 18,
+        data: order.map(r => { const a = g.get(r); return a ? (S.reg === "volume" ? a.v : a.pv) : 0; }),
+        itemStyle: { borderColor: C.surface, borderWidth: 1, borderRadius: ti === types.length - 1 ? [0, 3, 3, 0] : 0 } };
+    });
+  } else {
+    const color = types.length > 1 ? C.combined : typeColor(types[0]);
+    const name = types.length > 1 ? "Both types (volume-weighted)" : typeName(types[0]);
+    series = [{ name, type: "bar", color, barMaxWidth: 18, data: order.map(r => metricOf(byReg.get(r))), itemStyle: { borderRadius: [0, 3, 3, 0] },
+      label: { show: true, position: "right", color: C.ink2, fontSize: 11, formatter: p => M.fmt(p.value) } }];
+  }
+  const h = Math.max(300, order.length * 26 + 70);
+  document.getElementById(id).style.height = h + "px";
+  chartFor(id).resize();
+  chartFor(id).setOption(baseOption({
+    grid: { left: 140, right: 64, top: 30, bottom: 36 },
+    tooltip: Object.assign(baseOption().tooltip, { trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(127,127,127,.08)" } },
+      formatter: ps => { const r = order[ps[0].dataIndex]; const a = byReg.get(r);
+        let s = `<b>${REG[r].name}</b> <span style="color:${C.muted}">${REG[r].level}</span>`;
+        if (ps.length > 1) ps.forEach(p => { s += tipRow(p.color, p.seriesName, M.fmt(p.value)); });
+        s += tipRow("transparent", "Avg price (all selected types)", fmtUSD(price(a)));
+        s += tipRow("transparent", "Volume", fmtInt(a.v) + " avocados");
+        s += tipRow("transparent", "Est. revenue", "$" + fmtInt(a.pv));
+        return s; } }),
+    xAxis: axisBase({ type: "value", name: M.axis, nameLocation: "middle", nameGap: 24, axisLabel: { color: C.muted, fontSize: 11, formatter: M.axisFmt } }),
+    yAxis: axisBase({ type: "category", data: names, splitLine: { show: false }, axisLabel: { color: C.ink2, fontSize: 11 } }),
+    series,
+  }), true);
+}
+
+/* 7. Regional trends ------------------------------------------------------------ */
+function syncRtSlots() {
+  // Drop picks no longer in the region filter; default to the 4 largest regions by volume.
+  [...rtSlots.keys()].forEach(r => { if (!S.regions.has(r)) rtSlots.delete(r); });
+  if (!rtSlots.size && S.regions.size) {
+    const g = group(filterRows({ regions: new Set(S.regions) }), r => r[2]);
+    [...S.regions].sort((a, b) => ((g.get(b) || {}).v || 0) - ((g.get(a) || {}).v || 0)).slice(0, 4).forEach(r => assignSlot(r));
+  }
+}
+function assignSlot(r) {
+  const used = new Set(rtSlots.values());
+  for (let s = 0; s < 6; s++) if (!used.has(s)) { rtSlots.set(r, s); return true; }
+  return false;
+}
+function renderRtChips() {
+  const box = document.getElementById("rtChips");
+  const regs = [...S.regions].sort((a, b) => REG[a].name.localeCompare(REG[b].name));
+  box.innerHTML = regs.map(r => {
+    const on = rtSlots.has(r);
+    return `<button class="chip" data-r="${r}" aria-pressed="${on}" ${!on && rtSlots.size >= 6 ? 'disabled title="Up to 6 regions"' : ""}>` +
+      (on ? `<span class="swatch" style="background:${C.reg[rtSlots.get(r)]}"></span>` : "") + REG[r].name + "</button>";
+  }).join("");
+}
+function renderRegTrend() {
+  const id = "cRegTrend";
+  syncRtSlots();
+  renderRtChips();
+  if (!S.regions.size) { setEmpty(id, NO_DATA); return; }
+  if (!rtSlots.size) { setEmpty(id, "Pick at least one region above to compare."); return; }
+  const picks = [...rtSlots.keys()];
+  const rows = filterRows({ regions: new Set(picks) });
+  if (setEmpty(id, rows.length ? "" : NO_DATA)) return;
+  const { keys } = periodsInRange();
+  const M = METRIC[S.rt];
+  const series = picks.sort((a, b) => rtSlots.get(a) - rtSlots.get(b)).map(r => {
+    const g = group(rows.filter(x => x[2] === r), x => periodKey(x[0]));
+    return { name: REG[r].name, type: "line", color: C.reg[rtSlots.get(r)], symbolSize: 6, showSymbol: keys.length <= 40, lineStyle: { width: 2 },
+      data: keys.map(k => { const a = g.get(k); return !a ? null : S.rt === "price" ? price(a) : S.rt === "volume" ? a.v : a.pv; }) };
+  });
+  chartFor(id).setOption(baseOption({
+    grid: { left: 64, right: 16, top: 40, bottom: 36 },
+    tooltip: Object.assign(baseOption().tooltip, { trigger: "axis", axisPointer: { type: "line", lineStyle: { color: C.axis } },
+      formatter: ps => { let h = `<b>${periodLabel(keys[ps[0].dataIndex])}</b>`;
+        [...ps].sort((a, b) => (b.value || 0) - (a.value || 0)).forEach(p => { h += tipRow(p.color, p.seriesName, S.rt === "price" ? (p.value == null ? "–" : "$" + p.value.toFixed(3)) : S.rt === "volume" ? fmtInt(p.value) : "$" + fmtInt(p.value)); });
+        return h; } }),
+    xAxis: axisBase({ type: "category", data: keys.map(k => periodLabel(k)), boundaryGap: false, splitLine: { show: false } }),
+    yAxis: axisBase({ type: "value", name: M.axis + (S.rt === "revenue" ? " (estimate)" : ""), scale: S.rt === "price", axisLabel: { color: C.muted, fontSize: 11, formatter: M.axisFmt } }),
+    series,
+  }), true);
+}
+
+/* 8. Price vs volume scatter + elasticity ------------------------------------------------------------ */
+function ols(xs, ys) {
+  const n = xs.length; if (n < 3) return null;
+  const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
+  let sxy = 0, sxx = 0, syy = 0;
+  for (let i = 0; i < n; i++) { const dx = xs[i] - mx, dy = ys[i] - my; sxy += dx * dy; sxx += dx * dx; syy += dy * dy; }
+  if (sxx === 0) return null;
+  const b = sxy / sxx, a = my - b * mx;
+  return { a, b, r2: syy > 0 ? (sxy * sxy) / (sxx * syy) : 0, n };
+}
+function renderScatter() {
+  const id = "cScatter";
+  const rows = filterRows({ regions: new Set(S.regions) });
+  const line = document.getElementById("elastLine"), foot = document.getElementById("scFoot");
+  if (setEmpty(id, rows.length ? "" : NO_DATA)) { line.textContent = ""; foot.textContent = ""; return; }
+  // Points: one per region x type x period (at current granularity).
+  const g = group(rows, r => r[2] + "|" + r[1] + "|" + periodKey(r[0]));
+  const pts = [];
+  g.forEach((a, k) => { const [r, t, pk] = k.split("|").map(Number); if (a.v > 0) pts.push({ r, t, pk, p: price(a), v: a.v }); });
+  const norm = S.sc === "norm";
+  if (norm) {
+    // Divide by each region/type geometric mean so only within-region movement remains.
+    const gm = new Map();
+    pts.forEach(o => { const k = o.r + "|" + o.t; const m = gm.get(k) || { lp: 0, lv: 0, n: 0 }; m.lp += Math.log(o.p); m.lv += Math.log(o.v); m.n++; gm.set(k, m); });
+    pts.forEach(o => { const m = gm.get(o.r + "|" + o.t); o.x = o.p / Math.exp(m.lp / m.n); o.y = o.v / Math.exp(m.lv / m.n); });
+  } else pts.forEach(o => { o.x = o.p; o.y = o.v; });
+  const series = [], stats = [];
+  selTypes().forEach(t => {
+    const sub = pts.filter(o => o.t === t);
+    if (!sub.length) return;
+    series.push({ name: typeName(t), type: "scatter", color: typeColor(t), symbolSize: 8,
+      itemStyle: { opacity: 0.75, borderColor: C.surface, borderWidth: 1 }, data: sub.map(o => [o.x, o.y, o.r, o.pk, o.p, o.v]) });
+    const fit = ols(sub.map(o => Math.log(o.x)), sub.map(o => Math.log(o.y)));
+    if (fit) {
+      const xs = sub.map(o => o.x), x0 = Math.min(...xs), x1 = Math.max(...xs);
+      series.push({ name: typeName(t) + " fit", type: "line", color: typeColor(t), symbol: "none", lineStyle: { width: 2 }, silent: true, tooltip: { show: false },
+        data: [[x0, Math.exp(fit.a) * Math.pow(x0, fit.b)], [x1, Math.exp(fit.a) * Math.pow(x1, fit.b)]] });
+      stats.push(`<span class="swatch" style="background:${typeColor(t)}"></span>${typeName(t)}: elasticity ≈ <b>${fit.b.toFixed(2)}</b> <span style="color:var(--muted)">(R² ${fit.r2.toFixed(2)}, n=${fit.n})</span>`);
+    } else stats.push(`${typeName(t)}: not enough points for a fit`);
+  });
+  line.innerHTML = stats.join(" &nbsp;·&nbsp; ");
+  foot.textContent = norm
+    ? "Within-region view: price and volume are shown relative to each region/type's own average (1.0 = typical), so the slope uses only movement within each region over time. It still ignores trend growth, supply shocks and other factors, so treat it as a rough approximation."
+    : "Raw view: the slope pools all regions together, so it is driven mostly by differences in market size between regions, not by how buyers respond to price. Use the within-region view for a better (still rough) elasticity.";
+  chartFor(id).setOption(baseOption({
+    legend: { top: 0, right: 0, data: series.filter(s => s.type === "scatter").map(s => s.name), textStyle: { color: C.ink2, fontSize: 12 } },
+    grid: { left: 70, right: 24, top: 36, bottom: 48 },
+    tooltip: Object.assign(baseOption().tooltip, { trigger: "item", formatter: p => { const [, , r, pk, pr, v] = p.value;
+      return `<b>${REG[r].name}</b> · ${periodLabel(pk)}` + tipRow(p.color, p.seriesName + " price", "$" + pr.toFixed(3)) + tipRow(p.color, "Volume", fmtInt(v) + " avocados") +
+        (norm ? tipRow("transparent", "Relative price / volume", p.value[0].toFixed(2) + " / " + p.value[1].toFixed(2)) : ""); } }),
+    xAxis: axisBase({ type: "log", name: norm ? "Price relative to region average (log scale)" : "Avg price, USD per avocado (log scale)", nameLocation: "middle", nameGap: 28, min: v => v.min / 1.05, max: v => v.max * 1.05,
+      axisLabel: { color: C.muted, fontSize: 11, formatter: v => norm ? (+v).toFixed(2) + "×" : "$" + (+v).toFixed(2) } }),
+    yAxis: axisBase({ type: "log", name: norm ? "Volume relative to region average (log)" : "Avocados (log scale)", nameLocation: "middle", nameGap: 52, min: v => v.min / 1.15, max: v => v.max * 1.15,
+      axisLabel: { color: C.muted, fontSize: 11, formatter: v => norm ? (+v).toFixed(2) + "×" : fmtBig(+v, 0) } }),
+    series,
+  }), true);
+}
+
+/* 9. Volatility ------------------------------------------------------------ */
+function renderVola() {
+  const id = "cVola";
+  const rows = filterRows({ regions: new Set(S.regions) });
+  if (setEmpty(id, rows.length ? "" : NO_DATA)) return;
+  const { keys } = periodsInRange();
+  if (setEmpty(id, keys.length < 3 ? `Volatility needs at least 3 periods. There ${keys.length === 1 ? "is" : "are"} only ${keys.length} at ${GRAN_NAME[S.gran].toLowerCase()} granularity. Widen the date range or choose a finer granularity.` : "")) return;
+  const types = selTypes();
+  const stat = new Map();   // region -> {typeIdx: value}
+  types.forEach(t => {
+    const g = group(rows.filter(r => r[1] === t), r => r[2] + "|" + periodKey(r[0]));
+    [...S.regions].forEach(r => {
+      const ps = keys.map(k => price(g.get(r + "|" + k))).filter(v => v != null);
+      if (ps.length < 3) return;
+      const m = ps.reduce((a, b) => a + b, 0) / ps.length;
+      const sd = Math.sqrt(ps.reduce((a, b) => a + (b - m) ** 2, 0) / (ps.length - 1));   // sample std dev
+      const o = stat.get(r) || {}; o[t] = S.vola === "cv" ? sd / m : sd; stat.set(r, o);
+    });
+  });
+  const sortT = types[0];
+  const order = [...stat.keys()].sort((a, b) => (stat.get(a)[sortT] || 0) - (stat.get(b)[sortT] || 0));
+  const fmt = S.vola === "cv" ? (v => fmtPct(v)) : (v => "$" + v.toFixed(3));
+  const h = Math.max(300, order.length * (types.length > 1 ? 30 : 24) + 70);
+  document.getElementById(id).style.height = h + "px";
+  chartFor(id).resize();
+  chartFor(id).setOption(baseOption({
+    grid: { left: 140, right: 56, top: 30, bottom: 36 },
+    tooltip: Object.assign(baseOption().tooltip, { trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(127,127,127,.08)" } },
+      formatter: ps => { let s = `<b>${REG[order[ps[0].dataIndex]].name}</b>`; ps.forEach(p => { s += tipRow(p.color, p.seriesName, fmt(p.value)); }); return s + `<div style="color:${C.muted}">${S.vola === "cv" ? "Std dev ÷ mean" : "Std dev"} of ${keys.length} ${PERIOD_WORD[S.gran]}ly prices</div>`; } }),
+    xAxis: axisBase({ type: "value", name: S.vola === "cv" ? "Coefficient of variation (%)" : "Std dev of price (USD per avocado)", nameLocation: "middle", nameGap: 24,
+      axisLabel: { color: C.muted, fontSize: 11, formatter: v => S.vola === "cv" ? (v * 100).toFixed(0) + "%" : "$" + v.toFixed(2) } }),
+    yAxis: axisBase({ type: "category", data: order.map(r => REG[r].name), splitLine: { show: false }, axisLabel: { color: C.ink2, fontSize: 11 } }),
+    series: types.map(t => ({ name: typeName(t), type: "bar", color: typeColor(t), barMaxWidth: 12, barGap: "20%",
+      itemStyle: { borderRadius: [0, 3, 3, 0] }, data: order.map(r => stat.get(r)[t] ?? null) })),
+  }), true);
+}
+
+/* 10. Year-over-year ------------------------------------------------------------ */
+function renderYoY() {
+  const id = "cYoY";
+  const regions = effRegions();
+  const inRange = filterRows();
+  if (setEmpty(id, inRange.length ? "" : NO_DATA)) return;
+  const years = [...new Set(inRange.map(r => DATES[r[0]].y))].sort();
+  const types = selTypes();
+  const growth = {};   // t -> {price:[], volume:[], note:[]}
+  types.forEach(t => {
+    const o = { price: [], volume: [], note: [] };
+    years.forEach(y => {
+      // Like-for-like: the seasons present in range for year y, vs. the same seasons in y-1 (base may fall before the range start).
+      const cur = inRange.filter(r => r[1] === t && DATES[r[0]].y === y);
+      const seasons = new Set(cur.map(r => seasonOf(DATES[r[0]])));
+      const base = ROWS.filter(r => r[1] === t && regions.has(r[2]) && DATES[r[0]].y === y - 1 && seasons.has(seasonOf(DATES[r[0]])));
+      const a = total(cur), b = total(base);
+      o.price.push(b.v > 0 && a.v > 0 ? price(a) / price(b) - 1 : null);
+      o.volume.push(b.v > 0 ? a.v / b.v - 1 : null);
+      o.note.push([...seasons].sort((p, q) => p - q).map(seasonLabel).join(", "));
+    });
+    growth[t] = o;
+  });
+  if (years.every((_, i) => types.every(t => growth[t].price[i] == null))) {
+    setEmpty(id, "No prior-year data to compare against. The first year in the dataset has no year before it."); return;
+  }
+  const yl = years.map(String);
+  const mk = (t, key, gi) => ({ name: typeName(t), type: "bar", xAxisIndex: gi, yAxisIndex: gi, color: typeColor(t), barMaxWidth: 18, barGap: "15%",
+    data: growth[t][key].map(v => v == null ? null : { value: v, itemStyle: { borderRadius: v >= 0 ? [3, 3, 0, 0] : [0, 0, 3, 3] } }) });
+  chartFor(id).setOption(baseOption({
+    grid: [{ left: 56, right: 16, top: 44, height: "30%" }, { left: 56, right: 16, top: "62%", bottom: 30 }],
+    title: [
+      { text: "Avg price growth, % YoY", left: 0, top: 22, textStyle: { fontSize: 12, fontWeight: 500, color: C.ink2 } },
+      { text: "Volume growth, % YoY", left: 0, top: "53%", textStyle: { fontSize: 12, fontWeight: 500, color: C.ink2 } },
+    ],
+    legend: { top: 0, right: 0, left: "auto", data: types.map(typeName), textStyle: { color: C.ink2, fontSize: 12 }, itemWidth: 14, itemHeight: 8, icon: "roundRect" },
+    axisPointer: { link: [{ xAxisIndex: "all" }] },
+    tooltip: Object.assign(baseOption().tooltip, { trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: "rgba(127,127,127,.08)" } },
+      formatter: ps => { const i = ps[0].dataIndex; let h = `<b>${yl[i]} vs ${years[i] - 1}</b>`;
+        types.forEach(t => { h += tipRow(typeColor(t), typeName(t) + " price", fmtSignedPct(growth[t].price[i])) + tipRow(typeColor(t), typeName(t) + " volume", fmtSignedPct(growth[t].volume[i])); });
+        return h + `<div style="color:${C.muted}">Like-for-like seasons: ${growth[types[0]].note[i]}</div>`; } }),
+    xAxis: [axisBase({ type: "category", data: yl, gridIndex: 0, splitLine: { show: false } }), axisBase({ type: "category", data: yl, gridIndex: 1, splitLine: { show: false } })],
+    yAxis: [axisBase({ type: "value", gridIndex: 0, axisLabel: { color: C.muted, fontSize: 11, formatter: v => (v * 100).toFixed(0) + "%" } }),
+            axisBase({ type: "value", gridIndex: 1, axisLabel: { color: C.muted, fontSize: 11, formatter: v => (v * 100).toFixed(0) + "%" } })],
+    series: types.map(t => mk(t, "price", 0)).concat(types.map(t => mk(t, "volume", 1))),
+  }), true);
+}
+
+/* Data table ------------------------------------------------------------ */
+function renderTable() {
+  const tbl = document.getElementById("dataTable");
+  if (!document.getElementById("tableBox").open) return;
+  const rows = filterRows();
+  if (!rows.length) { tbl.innerHTML = `<tr><td>${NO_DATA}</td></tr>`; return; }
+  const { keys } = periodsInRange();
+  const g = group(rows, r => periodKey(r[0]) + "|" + r[1]);
+  let h = "<thead><tr><th>Period</th><th>Type</th><th>Avg price (USD)</th><th>Volume (avocados)</th><th>Est. revenue (USD)</th></tr></thead><tbody>";
+  keys.forEach(k => selTypes().forEach(t => { const a = g.get(k + "|" + t); if (!a) return;
+    h += `<tr><td>${periodLabel(k)}</td><td>${typeName(t)}</td><td>${price(a).toFixed(4)}</td><td>${fmtInt(a.v)}</td><td>${fmtInt(a.pv)}</td></tr>`; }));
+  tbl.innerHTML = h + "</tbody>";
+}
+
+/* ---------------- controls ---------------- */
+function regionLabel() {
+  const def = new Set(D.defaultRegions);
+  if (S.regions.size === def.size && [...def].every(r => S.regions.has(r))) return D.defaultLabel;
+  if (!S.regions.size) return "No regions selected";
+  if (S.regions.size <= 2) return [...S.regions].map(r => REG[r].name).join(", ");
+  return `${S.regions.size} regions`;
+}
+function renderRegionList() {
+  const q = document.getElementById("msSearch").value.trim().toLowerCase();
+  const list = document.getElementById("msList");
+  let html = "", lastLevel = null, shown = 0;
+  REG.forEach((r, i) => {
+    if (q && !r.name.toLowerCase().includes(q) && !r.level.toLowerCase().includes(q)) return;
+    if (r.level !== lastLevel) { html += `<div class="ms-level">${r.level}</div>`; lastLevel = r.level; }
+    html += `<label class="ms-item"><input type="checkbox" data-r="${i}" ${S.regions.has(i) ? "checked" : ""}> ${r.name}</label>`;
+    shown++;
+  });
+  list.innerHTML = shown ? html : `<div class="ms-empty">No regions match “${q.replace(/</g, "&lt;")}”</div>`;
+}
+function syncControls() {
+  const opts = DATES.map(d => `<option value="${d.i}">${d.s}</option>`).join("");
+  const fs = document.getElementById("fromSel"), ts = document.getElementById("toSel");
+  if (!fs.options.length) { fs.innerHTML = opts; ts.innerHTML = opts; }
+  fs.value = S.from; ts.value = S.to;
+  document.querySelectorAll("#typeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.t === S.type));
+  document.querySelectorAll("#granSeg button").forEach(b => {
+    const ok = GRAN_ORDER.indexOf(b.dataset.g) >= GRAN_ORDER.indexOf(FREQ);
+    b.disabled = !ok;
+    b.title = ok ? "" : `Not available: the data is ${GRAN_NAME[FREQ].toLowerCase()}`;
+    b.setAttribute("aria-pressed", b.dataset.g === S.gran);
+  });
+  const preset = presetRange();
+  document.querySelectorAll("#presetSeg button").forEach(b => { const p = preset[b.dataset.p]; b.setAttribute("aria-pressed", p[0] === S.from && p[1] === S.to); });
+  [["heatSeg", "heat"], ["regSeg", "reg"], ["volaSeg", "vola"], ["rtSeg", "rt"], ["scSeg", "sc"]].forEach(([el, key]) =>
+    document.querySelectorAll(`#${el} button`).forEach(b => b.setAttribute("aria-pressed", b.dataset.m === S[key])));
+  document.getElementById("maSel").value = S.ma;
+  document.getElementById("msLabel").textContent = regionLabel();
+  renderRegionList();
+}
+// Presets by calendar quarter: last 3 quarters and last 4 quarters (trailing year) in the data.
+function presetRange() {
+  const qk = di => DATES[di].y * 4 + DATES[di].q - 1;
+  const lastQ = qk(ND - 1);
+  const firstFrom = n => { for (let i = 0; i < ND; i++) if (qk(i) > lastQ - n) return i; return 0; };
+  return { q3: [firstFrom(3), ND - 1], y1: [firstFrom(4), ND - 1], all: [0, ND - 1] };
+}
+function notices() {
+  const msgs = [];
+  const eff = effRegions();
+  const dropped = [...S.regions].filter(r => !eff.has(r));
+  if (dropped.length) msgs.push(`Overlapping regions: ${dropped.map(r => REG[r].name).join(", ")} ${dropped.length > 1 ? "are" : "is"} inside another selected region, so ${dropped.length > 1 ? "they are" : "it is"} left out of totals to avoid double counting. Per-region charts still show ${dropped.length > 1 ? "them" : "it"}.`);
+  document.getElementById("notice").textContent = msgs.join(" ");
+}
+
+function renderAll() {
+  readColors();
+  syncControls();
+  notices();
+  renderKPIs(); renderPrice(); renderVolume(); renderPremium(); renderSeason(); renderHeat();
+  renderYoY(); renderRegion(); renderVola(); renderRegTrend(); renderScatter(); renderTable();
+}
+
+function on(sel, ev, fn) { document.querySelectorAll(sel).forEach(el => el.addEventListener(ev, fn)); }
+on("#fromSel", "change", e => { S.from = +e.target.value; if (S.from > S.to) S.to = S.from; renderAll(); });
+on("#toSel", "change", e => { S.to = +e.target.value; if (S.to < S.from) S.from = S.to; renderAll(); });
+on("#presetSeg button", "click", e => { [S.from, S.to] = presetRange()[e.currentTarget.dataset.p]; renderAll(); });
+on("#typeSeg button", "click", e => { S.type = e.currentTarget.dataset.t; renderAll(); });
+on("#granSeg button", "click", e => { S.gran = e.currentTarget.dataset.g; renderAll(); });
+on("#maSel", "change", e => { S.ma = +e.target.value; renderPrice(); });
+on("#heatSeg button", "click", e => { S.heat = e.currentTarget.dataset.m; syncControls(); renderHeat(); });
+on("#regSeg button", "click", e => { S.reg = e.currentTarget.dataset.m; syncControls(); renderRegion(); });
+on("#volaSeg button", "click", e => { S.vola = e.currentTarget.dataset.m; syncControls(); renderVola(); });
+on("#rtSeg button", "click", e => { S.rt = e.currentTarget.dataset.m; syncControls(); renderRegTrend(); });
+on("#scSeg button", "click", e => { S.sc = e.currentTarget.dataset.m; syncControls(); renderScatter(); });
+on("#resetBtn", "click", () => { S = DEFAULTS(); rtSlots.clear(); document.getElementById("msSearch").value = ""; renderAll(); });
+document.getElementById("rtChips").addEventListener("click", e => {
+  const b = e.target.closest("button[data-r]"); if (!b) return;
+  const r = +b.dataset.r;
+  if (rtSlots.has(r)) rtSlots.delete(r); else assignSlot(r);
+  rtTouched = true;
+  if (!rtSlots.size) { renderRtChips(); setEmpty("cRegTrend", "Pick at least one region above to compare."); return; }
+  renderRegTrend();
+});
+document.getElementById("tableBox").addEventListener("toggle", renderTable);
+// Region multi-select
+const ms = document.getElementById("regionMs"), msBtn = document.getElementById("msBtn");
+msBtn.addEventListener("click", () => { const open = !ms.classList.contains("open"); ms.classList.toggle("open", open); msBtn.setAttribute("aria-expanded", open); if (open) document.getElementById("msSearch").focus(); });
+document.addEventListener("click", e => { if (!e.composedPath().includes(ms)) { ms.classList.remove("open"); msBtn.setAttribute("aria-expanded", false); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && ms.classList.contains("open")) { ms.classList.remove("open"); msBtn.focus(); } });
+document.getElementById("msSearch").addEventListener("input", renderRegionList);
+document.getElementById("msList").addEventListener("change", e => {
+  const r = +e.target.dataset.r; if (e.target.checked) S.regions.add(r); else S.regions.delete(r); renderAll();
+});
+const visibleRegions = () => [...document.querySelectorAll("#msList input[data-r]")].map(i => +i.dataset.r);
+document.getElementById("msAll").addEventListener("click", () => { visibleRegions().forEach(r => S.regions.add(r)); renderAll(); });
+document.getElementById("msNone").addEventListener("click", () => { visibleRegions().forEach(r => S.regions.delete(r)); renderAll(); });
+document.getElementById("msDefault").addEventListener("click", () => { S.regions = new Set(D.defaultRegions); renderAll(); });
+
+// Resize + theme
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => Object.values(charts).forEach(c => c.resize()), 120); });
+if (window.matchMedia) window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", renderAll);
+
+/* ---------------- header / footer ---------------- */
+const lastD = DATES[ND - 1].s, firstD = DATES[0].s;
+document.getElementById("subtitle").textContent =
+  `${GRAN_NAME[FREQ]} data, ${firstD} to ${lastD} · ${REG.length} regions · ${TYPES.join(" & ")} · All prices are volume-weighted averages in USD per avocado.`;
+if (D.meta.synthetic) {
+  document.getElementById("banner").hidden = false;
+  document.getElementById("bannerText").textContent = "Heads up: according to the source file's Notes sheet, most of this dataset is SYNTHETIC (generated for illustration). Only the first date's rows are original. Do not read the figures as real market data.";
+}
+const lv = {}; REG.forEach(r => (lv[r.level] = lv[r.level] || []).push(r.name));
+document.getElementById("footer").innerHTML =
+  `<div><b>Source:</b> ${D.meta.source} · built ${D.meta.built} · ${ROWS.length.toLocaleString()} rows.</div>` +
+  `<div><b>Region levels:</b> ${Object.entries(lv).map(([k, v]) => `${k} (${v.length})`).join(", ")}. Regions that sit inside another selected region are never summed with it.</div>` +
+  `<div><b>Method:</b> Average prices are weighted by volume (Σ price×volume ÷ Σ volume). Revenue is an estimate (Σ price × volume). ` +
+  `Volume totals add up the observations in range. Each observation is one dated reading, not a full-period total.</div>` +
+  (D.meta.notes.length ? `<div style="margin-top:6px"><b>Notes from the source file:</b><ul>${D.meta.notes.map(n => `<li>${n.replace(/</g, "&lt;")}</li>`).join("")}</ul></div>` : "") +
+  `<div>Charts: Apache ECharts.</div>`;
+
+renderAll();
+})();
+</script>
+</body>
+</html>
