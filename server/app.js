@@ -51,25 +51,31 @@ export function createApp(cfg, deps = {}) {
     if (cfg.hsts) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
 
+  // Secure cookies only over HTTPS (directly or via a trusted proxy), so local http:// runs work too.
+  function isHttps(req) {
+    if (req.socket.encrypted) return true;
+    return cfg.trustProxy && String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+  }
+
   function session(req, res) {
     const cookies = parseCookies(req);
     let sid = cookies.cs_sid;
     if (!sid || !/^[A-Za-z0-9_-]{20,64}$/.test(sid)) {
       sid = randomId(24);
-      res.setHeader('Set-Cookie', `cs_sid=${sid}; Path=/api; HttpOnly; SameSite=Strict${cfg.secureCookies ? '; Secure' : ''}; Max-Age=86400`);
+      res.setHeader('Set-Cookie', `cs_sid=${sid}; Path=/api; HttpOnly; SameSite=Strict${isHttps(req) ? '; Secure' : ''}; Max-Age=86400`);
     }
     return sid;
   }
 
-  // CSRF defence for state-changing calls: same-origin + custom header.
+  // CSRF defence for state-changing calls: custom header + an Origin that is either
+  // this server itself or one of the configured public origins.
   function checkWrite(req) {
     if (req.headers['x-cs-request'] !== '1') throw new HttpError(403, 'forbidden', 'Request blocked.');
     const origin = req.headers.origin;
     if (origin) {
-      const allowed = cfg.allowedOrigins.length
-        ? cfg.allowedOrigins.includes(origin)
-        : (() => { try { return new URL(origin).host === req.headers.host; } catch { return false; } })();
-      if (!allowed) throw new HttpError(403, 'forbidden', 'Request blocked.');
+      let sameHost = false;
+      try { sameHost = new URL(origin).host === req.headers.host; } catch { sameHost = false; }
+      if (!sameHost && !cfg.allowedOrigins.includes(origin)) throw new HttpError(403, 'forbidden', 'Request blocked.');
     }
   }
 
@@ -134,7 +140,7 @@ export function createApp(cfg, deps = {}) {
     if (p === '/api/session/delete' && req.method === 'POST') {
       checkWrite(req);
       const purged = jobs.purgeSession(sid);
-      res.setHeader('Set-Cookie', `cs_sid=; Path=/api; HttpOnly; SameSite=Strict${cfg.secureCookies ? '; Secure' : ''}; Max-Age=0`);
+      res.setHeader('Set-Cookie', `cs_sid=; Path=/api; HttpOnly; SameSite=Strict${isHttps(req) ? '; Secure' : ''}; Max-Age=0`);
       return sendJson(res, 200, { ok: true, purgedJobs: purged });
     }
 
