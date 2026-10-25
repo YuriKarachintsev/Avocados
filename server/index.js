@@ -6,8 +6,9 @@ const cfg = loadConfig();
 const server = createApp(cfg);
 
 server.listen(cfg.port, cfg.host, () => {
-  const where = cfg.publicOrigin || `http://localhost:${cfg.port}`;
-  console.log(`${cfg.brandName} running at ${where}`);
+  console.log(`${cfg.brandName} is running.`);
+  console.log(`  Open on this computer:  http://localhost:${cfg.port}`);
+  if (cfg.publicOrigin) console.log(`  Public address (when deployed): ${cfg.publicOrigin}`);
   console.log(`  AI editing (Replicate): ${cfg.aiEnabled ? 'enabled' : 'NOT configured — set REPLICATE_API_TOKEN'}`);
   console.log(`  Telegram enquiries:     ${cfg.telegramEnabled ? 'enabled' : 'NOT configured — set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID'}`);
   if (cfg.nodeEnv === 'production' && !cfg.publicOrigin) {
