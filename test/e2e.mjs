@@ -86,16 +86,50 @@ async function run(name, ctxOpts) {
     const inner = { x0: fb.x0 + fw * 0.25, x1: fb.x1 - fw * 0.25, y0: fb.y0 + fh * 0.3, y1: fb.y1 - fh * 0.2 };
     const corner = { x0: 0, x1: 200, y0: 0, y1: 200 };
 
-    log(name, 'retouch (face only)');
+    log(name, 'skin: Fresh finish + fine-tune (face only)');
     await snap(page);
-    await page.click('.tile:has-text("Smooth skin")');
+    await page.click('.tile:has-text("Fresh")');
     await page.waitForTimeout(800);
-    await page.click('.tile:has-text("Even tone")');
+    await page.click('.tile:has-text("Whiten teeth")');
     await page.waitForTimeout(800);
+    await shot('skin');
     await page.click('#confirm-row .apply');
     await idle(page);
-    assert.ok(await regionDiff(page, inner) > 0.3, 'retouch changed the face');
-    assert.equal(await regionDiff(page, corner), 0, 'retouch left the background untouched');
+    assert.ok(await regionDiff(page, inner) > 0.3, 'skin finish changed the face');
+    assert.equal(await regionDiff(page, corner), 0, 'skin finish left the background untouched');
+
+    log(name, 'face shape (on-device warp)');
+    await page.click('#tool-face');
+    await snap(page);
+    await page.click('.tile:has-text("Small face")');
+    await page.waitForTimeout(600);
+    await page.click('.tile:has-text("Defined chin")');
+    await page.waitForTimeout(600);
+    await page.click('#confirm-row .apply');
+    await idle(page);
+    const jaw = { x0: fb.x0 - fw * 0.1, x1: fb.x1 + fw * 0.1, y0: fb.y0 + fh * 0.55, y1: fb.y1 + fh * 0.1 };
+    assert.ok(await regionDiff(page, jaw) > 0.2, 'face shape changed the jaw area');
+    assert.equal(await regionDiff(page, corner), 0, 'face shape left the background untouched');
+
+    log(name, 'makeup: lipstick + lashes');
+    await page.click('#tool-makeup');
+    await snap(page);
+    await page.click('.tile:has-text("Lipstick")');
+    await page.waitForTimeout(500);
+    await page.click('.swatch[aria-label="Classic red"]');
+    await page.waitForTimeout(500);
+    await page.click('.tile:has-text("Eyelashes")');
+    await page.waitForTimeout(800);
+    await shot('makeup');
+    await page.click('#confirm-row .apply');
+    await idle(page);
+    const lips = await page.evaluate(() => {
+      const f = window.__cs.S.faces[0].landmarks.slice(48, 60);
+      const xs = f.map((p) => p[0]); const ys = f.map((p) => p[1]);
+      return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+    });
+    assert.ok(await regionDiff(page, lips) > 5, 'lipstick changed the lips');
+    assert.equal(await regionDiff(page, corner), 0, 'makeup left the background untouched');
 
     log(name, 'light look');
     await page.click('#tool-light');
@@ -108,7 +142,9 @@ async function run(name, ctxOpts) {
     await page.click('#tool-outfit');
     await page.click('.segmented button:text-is("Men\'s styles")');
     await snap(page);
-    await page.click('.tile:has-text("Navy suit")');
+    const outfitTiles = await page.$$eval('.tiles .tile', (els) => els.length);
+    assert.ok(outfitTiles >= 10, '10 men\'s outfits shown');
+    await page.click('.tile:has-text("chalk-stripe")');
     await page.waitForSelector('.modal');
     await shot('consent');
     assert.match(await page.textContent('.modal'), /Replicate/);
@@ -123,11 +159,23 @@ async function run(name, ctxOpts) {
     assert.ok(await regionDiff(page, torso) > 20, 'outfit changed the clothing area');
     assert.equal(rep.state.files.size, 0, 'no uploaded photo copies remain at the AI provider');
 
-    log(name, 'background: HD cut-out (fake) + studio colour');
+    log(name, 'hair finish via AI (fake service)');
+    await page.click('#tool-hair');
+    assert.deepEqual(await page.$$eval('.tiles .tile span:last-child', (els) => els.map((e) => e.textContent)), ['Straight', 'Volume', 'Curly', 'Shiny', 'Texture', 'Keratin']);
+    await snap(page);
+    await page.click('.tile:has-text("Keratin")');
+    await idle(page, 240000);
+    await waitFor(page, () => window.__cs.S.pending?.type === 'aiComposite');
+    await page.click('#confirm-row .apply');
+    await idle(page);
+    assert.equal(await regionDiff(page, inner), 0, 'hair edit kept the original face pixels exactly');
+
+    log(name, 'background: HD cut-out (fake) + career photoshoot backdrop');
     await page.click('#tool-background');
     await page.click('.segmented button:has-text("HD")');
     await snap(page);
-    await page.click('.tile:has-text("Cream")');
+    await page.waitForSelector('.tile:has-text("Classic grey")');
+    await page.click('.tile:has-text("Classic grey")');
     await idle(page, 240000);
     await waitFor(page, () => window.__cs.S.pending?.type === 'background');
     await page.click('#confirm-row .apply');
@@ -151,6 +199,29 @@ async function run(name, ctxOpts) {
     await page.click('#btn-split');
     await shot('split');
     await page.click('#btn-split');
+
+    log(name, 'passport photo (ICAO 35×45, plain background) + print sheet');
+    await page.click('#tool-passport');
+    await page.click('.segmented button:has-text("Plain background")');
+    await page.click('#pp-make');
+    await idle(page, 240000);
+    await page.waitForSelector('.pp-checks');
+    await shot('passport');
+    assert.match(await page.textContent('.pp-checks'), /original photo/);
+    const [ppDl] = await Promise.all([page.waitForEvent('download'), page.click('#pp-download')]);
+    const ppFile = path.join(OUT, `${name}-passport.jpg`);
+    await ppDl.saveAs(ppFile);
+    const ppBuf = fs.readFileSync(ppFile);
+    const { sniffImage: sn } = await import('../server/http-utils.js');
+    const ppInfo = sn(ppBuf);
+    assert.deepEqual([ppInfo.width, ppInfo.height], [827, 1063], '35×45 mm at 600 dpi');
+    assert.equal(ppBuf.toString('latin1', 6, 10), 'JFIF');
+    assert.equal(ppBuf[13], 1); assert.equal(ppBuf.readUInt16BE(14), 600, 'marked as 600 dpi');
+    const [sheetDl] = await Promise.all([page.waitForEvent('download'), page.click('#pp-sheet')]);
+    const sheetFile = path.join(OUT, `${name}-passport-sheet.jpg`);
+    await sheetDl.saveAs(sheetFile);
+    const sheetInfo = sn(fs.readFileSync(sheetFile));
+    assert.deepEqual([sheetInfo.width, sheetInfo.height], [1800, 1200], '10×15 cm print sheet at 300 dpi');
 
     log(name, 'crop CV 3:4');
     await page.click('#tool-crop');

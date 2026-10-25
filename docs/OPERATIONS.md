@@ -8,12 +8,15 @@ As of 25 October 2026. Prices change; re-check the linked pages before budgeting
 | --- | --- | --- |
 | Upload (choose, camera, drag-drop, paste), EXIF orientation, HEIC/size/type errors | Working | Browser tests (Chromium, desktop + phone emulation) |
 | Face finding and selection in group photos | Working, on-device | Browser tests incl. a two-person photo |
-| Retouch: smooth skin, even tone, eyes, teeth, under-eyes (face mask only) | Working, on-device | Browser test asserts the face changed and background pixels did not |
+| Skin: Fresh, Silk, Cute + smooth skin, even tone, eyes, teeth, under-eyes (face mask only) | Working, on-device | Browser test asserts the face changed and background pixels did not |
+| Face shape: small face, cheekbones, defined chin (local warp; eyes, nose, mouth held rigid) | Working, on-device | Browser test asserts the jaw area changed and background pixels did not |
+| Makeup: lipstick (5 shades), blush (4), contouring, eyebrows (4), eyelashes | Working, on-device | Browser test asserts the lips changed and background pixels did not |
+| Passport photos: Schengen/ICAO, UK, USA, UAE; 600 dpi file + 10×15 cm print sheet; automatic checks | Working, on-device | Browser test checks a 827×1063 px, 600-dpi ICAO file and an 1800×1200 print sheet |
 | Light looks, Adjust (10 sliders) | Working, on-device | Browser tests |
-| Background: standard cut-out + 8 office backdrops, 5 studio colours, blur, own image | Working, on-device | Browser tests |
+| Background: standard cut-out + 7 modern-office and 9 career-photoshoot backdrops, blur, own image | Working, on-device | Browser tests |
 | Crop/framing (LinkedIn 1:1, CV 3:4, Corporate 4:5, ID 35×45) | Working | Browser test checks a 1536×2048 CV download from a 2048×2048 photo |
 | Compare (hold), split slider, undo/redo, reset (undoable), full-res JPEG/PNG download, share sheet, Projects | Working | Browser tests |
-| Outfit / Smile / Hair, HD cut-out, AI office backdrops | **Built; needs your Replicate key** | Exercised end-to-end against a test double of Replicate's HTTP API; outfit blending verified to keep face pixels identical. Not yet run against the live service |
+| Outfit (10 women's + 10 men's), Hair (6 finishes), Smile, HD cut-out, 8 AI modern offices | **Built; needs your Replicate key** | Exercised end-to-end against a test double of Replicate's HTTP API; outfit blending verified to keep face pixels identical. Not yet run against the live service |
 | Enquiry / application → Telegram, photo only with separate opt-in, CV upload | **Built; needs your bot token + chat ID** | Exercised against a test double of the Telegram Bot API |
 | Privacy consent before upload, delete photo, delete everything, withdraw consent | Working | Browser + server tests |
 
@@ -30,6 +33,9 @@ As of 25 October 2026. Prices change; re-check the linked pages before budgeting
 9. **Backdrops** are original stylised, defocused artwork — not photographs. Photoreal offices come from the AI option (per-use cost) or the optional `npm run backgrounds:ai` script.
 10. **Legal text.** The privacy page is a plain-language template, not legal advice. Have it reviewed (e.g. UAE PDPL / GDPR if you serve EU users), sign Replicate's data-processing terms if required, and state your retention for Telegram messages.
 11. **FaceApp inspection** used public pages only; see the evidence report for what remains Unknown.
+12. **Passport photos are not guaranteed to be accepted.** Sizes and head rules follow official pages where available (GOV.UK, travel.state.gov, u.ae) and published Schengen/ICAO figures; the checks (facing the camera, eyes open, mouth closed, even light, plain background, resolution) are automatic estimates. The UK, US and UAE reject digitally altered photos, so "Plain background" carries a warning there. Official UAE sizes are inconsistent across government pages. Glasses and head coverings are not detected — the user is asked to check.
+13. **Makeup and face shape** are on-device approximations placed from 68 face landmarks: they work best on front-facing faces and can misplace slightly on strong head turns. Face shaping changes appearance and is labelled so.
+14. **Luxury outfits** describe premium tailoring and fabrics only; no brand names, logos or monograms are requested, and results depend on the AI model.
 
 ## Service dependencies
 

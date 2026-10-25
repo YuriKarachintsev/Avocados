@@ -2,7 +2,7 @@ import { $, h, toast, modal, confirmDialog, getConfig, mountChrome, ApiError } f
 import { icons, garmentIcon } from '../icons.js';
 import { Engine } from '../engine/engine.js';
 import { History } from '../engine/history.js';
-import { applyOp, LOOKS, ADJUSTMENTS, RETOUCH_ITEMS, STUDIO_COLOURS } from '../engine/ops.js';
+import { applyOp, LOOKS, ADJUSTMENTS, RETOUCH_ITEMS, SKIN_LOOKS, MAKEUP_ITEMS, SHAPE_ITEMS } from '../engine/ops.js';
 import { faceMetrics } from '../engine/face.js';
 import { View } from './view.js';
 import {
@@ -13,6 +13,7 @@ import { segmentOnDevice } from './segment.js';
 import { ensureConsent, runAiJob, deleteServerSession } from './ai-client.js';
 import { roiFor, prepareUpload, composeResult } from './ai-compose.js';
 import { saveProject } from '../store.js';
+import { PASSPORT_SPECS, makePassport, passportJpeg, printSheet } from './passport.js';
 
 mountChrome('/editor');
 
@@ -29,13 +30,16 @@ const isTouch = matchMedia('(pointer: coarse)').matches;
 if (!isTouch) els.cameraLabel.hidden = true;
 
 const TOOLS = [
-  { id: 'retouch', label: 'Retouch', icon: 'retouch' },
-  { id: 'light', label: 'Light', icon: 'light' },
-  { id: 'adjust', label: 'Adjust', icon: 'adjust' },
+  { id: 'skin', label: 'Skin', icon: 'retouch' },
+  { id: 'face', label: 'Face', icon: 'faceShape' },
+  { id: 'makeup', label: 'Makeup', icon: 'makeup' },
+  { id: 'hair', label: 'Hair', icon: 'hair', ai: true },
   { id: 'outfit', label: 'Outfit', icon: 'outfit', ai: true },
   { id: 'background', label: 'Background', icon: 'background' },
+  { id: 'light', label: 'Light', icon: 'light' },
+  { id: 'adjust', label: 'Adjust', icon: 'adjust' },
   { id: 'smile', label: 'Smile', icon: 'smile', ai: true },
-  { id: 'hair', label: 'Hair', icon: 'hair', ai: true },
+  { id: 'passport', label: 'Passport', icon: 'idCard' },
   { id: 'crop', label: 'Crop', icon: 'crop' },
 ];
 
@@ -47,23 +51,26 @@ const FORMATS = [
   { id: 'passport', label: 'ID 35×45', aspect: '7:9' },
 ];
 
+// [jacket, inner layer, tie?] colours for the outfit tiles
 const GARMENTS = {
-  'w-office-navy': ['#24324f', '#f5f4f0'], 'w-office-black': ['#1e1d20', '#2d2c30'], 'w-office-charcoal': ['#4a4b50', '#3f4045'],
-  'w-office-cream': ['#ece2d2', '#fbf8f2'], 'w-smart-knit': ['#c49a6c', '#c49a6c'], 'w-smart-white': ['#fbfaf7', '#ece9e2'],
-  'w-smart-blush': ['#d8c3a5', '#efcfcd'], 'w-smart-chambray': ['#9fb6cf', '#b7c9dc'],
-  'm-office-charcoal': ['#45464b', '#ffffff', '#23345a'], 'm-office-navy': ['#22304d', '#cfe0f2', '#6d2433'],
-  'm-office-opencollar': ['#55565b', '#ffffff'], 'm-office-black': ['#1d1c1f', '#ffffff', '#111111'],
-  'm-smart-oxford': ['#273657', '#bcd2ea'], 'm-smart-merino': ['#26324c', '#ffffff'], 'm-smart-polo': ['#24304a', '#24304a'],
-  'm-smart-white': ['#fbfaf7', '#ece9e2'],
+  'w-office-ivory': ['#efe8dc', '#f7f2ea'], 'w-office-tuxedo': ['#18171a', '#ffffff'], 'w-office-camel': ['#b98b5e', '#f1e6d3'],
+  'w-office-navy': ['#22304b', '#ffffff'], 'w-office-greige': ['#b7aea3', '#b7aea3'],
+  'w-smart-cashmere': ['#efe6d6', '#efe6d6'], 'w-smart-silk': ['#e8d6b8', '#e8d6b8'], 'w-smart-boucle': ['#e9c9c4', '#ffffff'],
+  'w-smart-knitblazer': ['#1e1e21', '#ffffff'], 'w-smart-trench': ['#cdb592', '#25304a'],
+  'm-office-charcoal': ['#45464b', '#ffffff', '#23345a'], 'm-office-chalk': ['#22304d', '#cfe0f2', '#6d2433'],
+  'm-office-3piece': ['#1c2740', '#ffffff', '#a7a9ad'], 'm-office-black': ['#1d1c1f', '#ffffff', '#111111'],
+  'm-office-glen': ['#77797d', '#ffffff', '#1f2c4d'],
+  'm-smart-camel': ['#b98b5e', '#ffffff'], 'm-smart-polo': ['#cfc4ae', '#24304a'], 'm-smart-rollneck': ['#3c3d41', '#111111'],
+  'm-smart-oxford': ['#273657', '#bcd2ea'], 'm-smart-suede': ['#a8754b', '#ffffff'],
 };
 
 const S = {
   config: null, engine: new Engine(), view: null, history: null,
   faces: [], face: 0, fullW: 0, fullH: 0,
   full: null, prevAfter: null, prevBefore: null,
-  tool: 'retouch', pending: null, pendingLabel: '', pendingAssets: [],
+  tool: 'skin', pending: null, pendingLabel: '', pendingAssets: [],
   abort: null, seq: 0, mattes: new Map(), backdrops: new Map(), ui: {}, dirty: false,
-  faceError: null,
+  faceError: null, passport: null,
 };
 S.view = new View(els.stage, els.canvas);
 S.view.onCropChange = (params) => { if (S.pending?.type === 'frame') S.pending.params = { ...params }; };
@@ -165,7 +172,8 @@ async function openFile(file) {
 
 function resetState() {
   S.history = null; S.faces = []; S.face = 0; S.pending = null; S.pendingAssets = [];
-  S.mattes.clear(); S.faceError = null; S.dirty = false;
+  S.mattes.clear(); S.faceError = null; S.dirty = false; S.passport = null;
+  if (typeof showPassportView === 'function') showPassportView(false);
   S.view.setSplit(false); els.split.setAttribute('aria-pressed', 'false');
   S.view.setMode('normal'); S.view.hideFaces();
 }
@@ -276,6 +284,7 @@ function renderTools() {
       if (!(await guardPending())) return;
       S.tool = t.id;
       S.view.setMode(t.id === 'crop' ? 'crop' : 'normal');
+      showPassportView(t.id === 'passport');
       renderTools();
       renderOptions();
     });
@@ -285,7 +294,7 @@ function renderTools() {
 
 function head(title, sub) {
   return h('div', { class: 'opt-head' }, h('div', {}, h('div', { class: 'opt-title' }, title), sub ? h('div', { class: 'opt-sub' }, sub) : null),
-    S.faces.length > 1 && ['retouch', 'smile', 'hair', 'outfit'].includes(S.tool)
+    S.faces.length > 1 && ['skin', 'face', 'makeup', 'smile', 'hair', 'outfit', 'passport'].includes(S.tool)
       ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { els.faceHint.hidden = false; S.view.showFaces(S.faces, S.face, selectFace); } }, `Face ${S.face + 1} of ${S.faces.length}`) : null);
 }
 
@@ -336,47 +345,162 @@ function needsFace() {
 
 function aiOff(what) {
   if (S.config?.ai?.enabled) return null;
-  return unavailable(`${what} needs the AI service`, 'AI editing is not set up on this server yet, so this tool is unavailable. Retouch, Light, Adjust, Background (on-device) and Crop still work.');
+  return unavailable(`${what} needs the AI service`, 'AI editing is not set up on this server yet, so this tool is unavailable. Skin, Face, Makeup, Light, Adjust, Background (on-device), Passport and Crop still work.');
 }
 
 function renderOptions() {
   const o = els.options;
   o.replaceChildren();
   if (!S.history) return;
-  const fn = { retouch: optRetouch, light: optLight, adjust: optAdjust, outfit: optOutfit, background: optBackground, smile: optSmile, hair: optHair, crop: optCrop }[S.tool];
+  const fn = { skin: optSkin, face: optFace, makeup: optMakeup, light: optLight, adjust: optAdjust, outfit: optOutfit, background: optBackground, smile: optSmile, hair: optHair, passport: optPassport, crop: optCrop }[S.tool];
   fn(o);
   o.append(confirmRow());
 }
 
-// ----- Retouch (multiselect, face-only)
-function optRetouch(o) {
-  o.append(head('Retouch', 'Natural touch-ups on your face only. Combine several.'));
-  const miss = needsFace();
-  if (miss) { o.append(miss); return; }
-  const cur = S.pending?.type === 'retouch' ? S.pending.params : { face: S.face };
-  S.ui.retouchSel = S.ui.retouchSel && cur[S.ui.retouchSel] ? S.ui.retouchSel : RETOUCH_ITEMS.find((i) => cur[i.key])?.key || null;
-  const tiles = h('div', { class: 'tiles', role: 'group', 'aria-label': 'Retouch tools' });
-  for (const it of RETOUCH_ITEMS) {
+// ----- shared: a small face crop (with landmarks) for live tile previews
+function faceThumb(size = 128) {
+  const f = face();
+  if (!f) return null;
+  const src = S.prevAfter;
+  const k = src.width / S.fullW;
+  const m = faceMetrics(f.landmarks);
+  const side = Math.min(m.faceW * 1.5 * k, src.width, src.height);
+  const r = {
+    x: Math.max(0, Math.min(src.width - side, m.center[0] * k - side / 2)),
+    y: Math.max(0, Math.min(src.height - side, m.center[1] * k - side / 2)), w: side, h: side,
+  };
+  const c = cropToCanvas(src, r, size, size);
+  const img = canvasToImg(c);
+  c.width = 1; c.height = 1;
+  const t = size / side;
+  const landmarks = f.landmarks.map(([x, y]) => [(x * k - r.x) * t, (y * k - r.y) * t]);
+  return { img, faces: [{ landmarks }] };
+}
+
+function previewTile(base, op) {
+  if (!base) return null;
+  try {
+    return thumbCanvas(applyOp(base.img, op, { faces: base.faces, fullWidth: base.img.width, assets: {} }));
+  } catch { return thumbCanvas(base.img); }
+}
+
+// Multiselect group (FaceApp-style): several items active at once, each with its own strength.
+function multiGroup(o, { items, opType, label, ariaLabel, getValue, setValue, removeValue, icon, colors }) {
+  const cur = S.pending?.type === opType ? S.pending.params : { face: S.face };
+  const selKey = `${opType}Sel`;
+  if (!(S.ui[selKey] && getValue(cur, S.ui[selKey]))) S.ui[selKey] = items.find((i) => getValue(cur, i.key))?.key || null;
+  const tiles = h('div', { class: 'tiles', role: 'group', 'aria-label': ariaLabel });
+  for (const it of items) {
     tiles.append(tile({
-      label: it.label, thumb: icons[{ smooth: 'retouch', even: 'palette', eyes: 'light', teeth: 'smile', underEye: 'blur' }[it.key]],
-      pressed: Boolean(cur[it.key]), check: true,
+      label: it.label, thumb: icon(it), pressed: Boolean(getValue(cur, it.key)), check: true,
       onClick: () => {
-        const p = { ...(S.pending?.type === 'retouch' ? S.pending.params : { face: S.face }) };
-        if (p[it.key] && S.ui.retouchSel === it.key) { delete p[it.key]; S.ui.retouchSel = null; } else { p[it.key] = p[it.key] || it.def; S.ui.retouchSel = it.key; }
-        const active = RETOUCH_ITEMS.filter((x) => p[x.key]);
+        const p = structuredClone(S.pending?.type === opType ? S.pending.params : { face: S.face });
+        p.face = S.face;
+        if (getValue(p, it.key) && S.ui[selKey] === it.key) { removeValue(p, it.key); S.ui[selKey] = null; } else { if (!getValue(p, it.key)) setValue(p, it, it.def); S.ui[selKey] = it.key; }
+        const active = items.filter((x) => getValue(p, x.key));
         if (!active.length) { cancelPending(); return; }
-        setPending({ type: 'retouch', params: p }, active.length > 1 ? 'Retouch' : active[0].label);
+        setPending({ type: opType, params: p }, active.length > 1 ? label : active[0].label);
         renderOptions();
       },
     }));
   }
   o.append(tiles);
-  if (S.ui.retouchSel && S.pending?.type === 'retouch') {
-    const item = RETOUCH_ITEMS.find((i) => i.key === S.ui.retouchSel);
-    o.append(slider({ name: item.label, value: S.pending.params[item.key], def: item.def, onInput: (v) => { S.pending.params[item.key] = Math.max(1, v); schedulePreview(); } }));
+  const sel = items.find((i) => i.key === S.ui[selKey]);
+  if (sel && S.pending?.type === opType) {
+    if (colors && sel.colors) {
+      const row = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': `${sel.label} colour` });
+      for (const [name, hex] of sel.colors) {
+        const cur2 = S.pending.params[sel.key]?.c || sel.colors[0][1];
+        const b = h('button', { type: 'button', class: 'swatch', role: 'radio', 'aria-checked': String(cur2 === hex), 'aria-label': name, title: name });
+        b.style.setProperty('--sw', hex);
+        b.addEventListener('click', () => { S.pending.params[sel.key].c = hex; schedulePreview(); renderOptions(); });
+        row.append(b);
+      }
+      o.append(row);
+    }
+    o.append(slider({ name: sel.label, value: getValue(S.pending.params, sel.key), def: sel.def, onInput: (v) => { setValue(S.pending.params, sel, Math.max(1, v), true); schedulePreview(); } }));
   } else {
-    o.append(h('p', { class: 'opt-sub' }, 'Tap a tool to try it; tap it again to switch it off.'));
+    o.append(h('p', { class: 'opt-sub' }, 'Tap to try; tap again to switch it off. Combine as many as you like.'));
   }
+}
+
+// ----- Skin: Fresh / Silk / Cute finishes + fine-tuning (face only)
+function skinParams(look, intensity, fine) {
+  const p = { face: S.face, look, intensity, fine: { ...fine } };
+  const preset = look ? SKIN_LOOKS[look].p : {};
+  for (const key of new Set([...Object.keys(preset), ...Object.keys(fine)])) {
+    p[key] = Math.max(((preset[key] || 0) * intensity) / 100, fine[key] || 0);
+  }
+  return p;
+}
+
+function optSkin(o) {
+  o.append(head('Skin', 'Fresh, Silk or Cute finish — on your face only.'));
+  const miss = needsFace();
+  if (miss) { o.append(miss); return; }
+  const cur = S.pending?.type === 'retouch' ? S.pending.params : null;
+  const base = faceThumb();
+  const looks = h('div', { class: 'tiles', role: 'group', 'aria-label': 'Skin finishes' });
+  looks.append(tile({ label: 'Original', thumb: base ? thumbCanvas(base.img) : icons.retouch, pressed: !cur?.look, onClick: () => {
+    if (!cur) return;
+    const p = skinParams(null, 0, cur.fine || {});
+    if (!Object.keys(cur.fine || {}).length) { cancelPending(); return; }
+    setPending({ type: 'retouch', params: p }, 'Skin');
+    renderOptions();
+  } }));
+  for (const [key, lk] of Object.entries(SKIN_LOOKS)) {
+    looks.append(tile({
+      label: lk.label, thumb: previewTile(base, { type: 'retouch', params: { face: 0, ...lk.p } }) || icons.retouch, pressed: cur?.look === key,
+      onClick: () => { setPending({ type: 'retouch', params: skinParams(key, cur?.intensity ?? 70, cur?.fine || {}) }, `${lk.label} skin`); renderOptions(); },
+    }));
+  }
+  o.append(looks);
+  if (cur?.look) {
+    o.append(slider({ name: 'Intensity', value: cur.intensity, def: 70, onInput: (v) => { Object.assign(S.pending.params, skinParams(cur.look, v, S.pending.params.fine || {})); schedulePreview(); } }));
+  }
+  o.append(h('div', { class: 'group-label' }, 'Fine-tune'));
+  const iconFor = { smooth: 'retouch', even: 'palette', eyes: 'light', teeth: 'smile', underEye: 'blur' };
+  multiGroup(o, {
+    items: RETOUCH_ITEMS, opType: 'retouch', label: 'Skin', ariaLabel: 'Fine-tune',
+    icon: (it) => icons[iconFor[it.key]],
+    getValue: (p, k) => p.fine?.[k] || 0,
+    setValue: (p, it, v) => {
+      p.fine = { ...(p.fine || {}), [it.key]: v };
+      Object.assign(p, skinParams(p.look || null, p.intensity ?? 70, p.fine));
+    },
+    removeValue: (p, k) => {
+      const fine = { ...(p.fine || {}) }; delete fine[k];
+      for (const key of Object.keys(p)) if (!['face', 'look', 'intensity', 'fine'].includes(key)) delete p[key];
+      p.fine = fine;
+      Object.assign(p, skinParams(p.look || null, p.intensity ?? 70, fine));
+    },
+  });
+}
+
+// ----- Face shape (on-device local warp, features kept rigid)
+function optFace(o) {
+  o.append(head('Face shape', 'Subtle reshaping. This changes how you look, so keep it natural for application photos.'));
+  const miss = needsFace();
+  if (miss) { o.append(miss); return; }
+  multiGroup(o, {
+    items: SHAPE_ITEMS, opType: 'reshape', label: 'Face shape', ariaLabel: 'Face shape tools',
+    icon: (it) => icons[`shape_${it.key}`] || icons.faceShape,
+    getValue: (p, k) => p[k] || 0, setValue: (p, it, v) => { p[it.key] = v; }, removeValue: (p, k) => { delete p[k]; },
+  });
+}
+
+// ----- Makeup (on-device, landmark-placed)
+function optMakeup(o) {
+  o.append(head('Makeup', 'Lipstick, blush, contouring, brows and lashes — placed on your features only.'));
+  const miss = needsFace();
+  if (miss) { o.append(miss); return; }
+  multiGroup(o, {
+    items: MAKEUP_ITEMS, opType: 'makeup', label: 'Makeup', ariaLabel: 'Makeup tools', colors: true,
+    icon: (it) => icons[`mk_${it.key}`] || icons.makeup,
+    getValue: (p, k) => p[k]?.a || 0,
+    setValue: (p, it, v) => { p[it.key] = { a: v, c: p[it.key]?.c || it.colors?.[0]?.[1] }; },
+    removeValue: (p, k) => { delete p[k]; },
+  });
 }
 
 // ----- Light (looks)
@@ -524,17 +648,11 @@ function optSmile(o) {
 }
 
 function optHair(o) {
-  o.append(head('Hair', 'Tidy or restyle your hair. Your face stays untouched.'));
+  o.append(head('Hair', 'Change the finish of your hair. Your face stays untouched.'));
   const off = aiOff('Hair styling') || needsFace();
   if (off) { o.append(off); return; }
-  S.ui.hairGroup = S.ui.hairGroup || 'w';
-  const seg = h('div', { class: 'segmented', role: 'group', 'aria-label': 'Style group' });
-  for (const [k, l] of [['w', "Women's styles"], ['m', "Men's styles"]]) {
-    seg.append(h('button', { type: 'button', 'aria-pressed': String(S.ui.hairGroup === k), onclick: () => { S.ui.hairGroup = k; renderOptions(); } }, l));
-  }
-  o.append(seg);
-  const ids = (S.config.ai.presets.hair || []).map((p) => p.id).filter((id) => id === 'tidy' || id.startsWith(`${S.ui.hairGroup}-`));
-  o.append(aiTiles('hair', ids, () => icons.hair));
+  const ids = (S.config.ai.presets.hair || []).map((p) => p.id);
+  o.append(aiTiles('hair', ids, (id) => icons[`hair_${id}`] || icons.hair));
   o.append(h('p', { class: 'cost-note' }, 'Uses AI · a resized copy of the edited area is sent for processing after you agree.'));
 }
 
@@ -609,7 +727,7 @@ async function loadBackdropList() {
 }
 
 function optBackground(o) {
-  o.append(head('Background', 'Place yourself in an office, a studio colour or a soft blur.'));
+  o.append(head('Background', 'Modern offices or a career-photoshoot studio backdrop.'));
   const aiOn = Boolean(S.config?.ai?.enabled);
   S.ui.bgQuality = S.ui.bgQuality || 'standard';
   const seg = h('div', { class: 'segmented', role: 'group', 'aria-label': 'Cut-out quality' });
@@ -626,50 +744,15 @@ function optBackground(o) {
   o.append(seg);
   const cur = S.pending?.type === 'background' ? S.pending.params : null;
 
-  const office = h('div', { class: 'tiles', role: 'group', 'aria-label': 'Office backdrops' });
-  o.append(h('div', { class: 'group-label' }, 'Office'), office);
-  loadBackdropList().then((list) => {
-    for (const item of list) {
-      office.append(tile({
-        label: item.label, thumb: h('img', { src: item.thumb, alt: '', loading: 'lazy' }), pressed: cur?.key === `office:${item.id}`,
-        onClick: () => chooseBackground({ mode: 'image', key: `office:${item.id}`, loadBackdrop: item }, item.label),
-      }));
-    }
-  });
-
-  const studio = h('div', { class: 'tiles', role: 'group', 'aria-label': 'Studio colours' });
-  for (const [k, c] of Object.entries(STUDIO_COLOURS)) {
-    const swatch = h('canvas', { width: 64, height: 64 });
-    const g = swatch.getContext('2d');
-    const grd = g.createRadialGradient(32, 26, 4, 32, 32, 46);
-    grd.addColorStop(0, `rgb(${c.inner})`); grd.addColorStop(1, `rgb(${c.outer})`);
-    g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
-    studio.append(tile({ label: c.label, thumb: swatch, pressed: cur?.key === `color:${k}`, onClick: () => chooseBackground({ mode: 'color', color: k, key: `color:${k}` }, `${c.label} studio`) }));
-  }
-  studio.append(tile({ label: 'Blur my background', thumb: icons.blur, pressed: cur?.key === 'blur', onClick: () => chooseBackground({ mode: 'blur', key: 'blur', blur: Math.max(cur?.blur || 0, 45) }, 'Background blur') }));
-  const own = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', class: 'sr-only', id: 'own-bg' });
-  own.addEventListener('change', async () => {
-    const file = own.files?.[0];
-    if (!file) return;
-    try {
-      busy(true, 'Loading your backdrop');
-      const { img } = await loadPhoto(file);
-      const id = `bg-own-${uid()}`;
-      S.engine.putAsset(id, img);
-      busy(false);
-      chooseBackground({ mode: 'image', bg: id, key: 'own' }, 'Your backdrop');
-    } catch (err) { busy(false); toast(errorMessage(err), { type: 'error' }); }
-  });
-  studio.append(tile({ label: 'Use my own', thumb: icons.upload, pressed: cur?.key === 'own', onClick: () => own.click() }), own);
-  o.append(h('div', { class: 'group-label' }, 'Studio & more'), studio);
-
-  const aiBg = h('div', { class: 'tiles', role: 'group', 'aria-label': 'AI-generated offices' });
+  const offices = h('div', { class: 'tiles', role: 'group', 'aria-label': 'Modern offices' });
+  const studio = h('div', { class: 'tiles', role: 'group', 'aria-label': 'Career photoshoot backdrops' });
+  o.append(h('div', { class: 'group-label' }, 'Modern offices'), offices);
   for (const p of S.config?.ai?.presets?.background || []) {
-    aiBg.append(tile({
+    offices.append(tile({
       label: p.label, thumb: icons.wand, disabled: !aiOn, pressed: cur?.key === `ai:${p.id}`,
       onClick: async () => {
         S.abort = new AbortController();
-        busy(true, 'Creating an office backdrop', { cancellable: true, sub: 'No photo is sent for this' });
+        busy(true, 'Creating an office backdrop', { cancellable: true, sub: 'Photorealistic · no photo is sent for this' });
         try {
           const aspect = S.fullW > S.fullH * 1.15 ? '4:3' : S.fullH > S.fullW * 1.15 ? '3:4' : '1:1';
           const blob = await runAiJob({ feature: 'background', preset: p.id, aspect, signal: S.abort.signal, onStage: (t) => busy(true, t, { cancellable: true }) });
@@ -685,14 +768,147 @@ function optBackground(o) {
       },
     }));
   }
-  o.append(h('div', { class: 'group-label' }, aiOn ? 'AI offices (photorealistic, no photo sent)' : 'AI offices — needs the AI service'), aiBg);
+  o.append(h('div', { class: 'group-label' }, 'Career photoshoot'), studio);
+  loadBackdropList().then((list) => {
+    for (const item of list) {
+      const t = tile({
+        label: item.label, thumb: h('img', { src: item.thumb, alt: '', loading: 'lazy' }), pressed: cur?.key === `art:${item.id}`,
+        onClick: () => chooseBackground({ mode: 'image', key: `art:${item.id}`, loadBackdrop: item }, item.label),
+      });
+      (item.group === 'studio' ? studio : offices).append(t);
+    }
+  });
+  o.append(h('p', { class: 'cost-note' }, aiOn
+    ? 'Wand tiles create a photorealistic office with AI (no photo sent). Picture tiles are built in and free.'
+    : 'Photorealistic AI offices need the AI service; the built-in offices and studio backdrops work now.'));
+
+  const more = h('div', { class: 'tiles', role: 'group', 'aria-label': 'More backgrounds' });
+  more.append(tile({ label: 'Blur my background', thumb: icons.blur, pressed: cur?.key === 'blur', onClick: () => chooseBackground({ mode: 'blur', key: 'blur', blur: Math.max(cur?.blur || 0, 45) }, 'Background blur') }));
+  const own = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', class: 'sr-only', id: 'own-bg' });
+  own.addEventListener('change', async () => {
+    const file = own.files?.[0];
+    if (!file) return;
+    try {
+      busy(true, 'Loading your backdrop');
+      const { img } = await loadPhoto(file);
+      const id = `bg-own-${uid()}`;
+      S.engine.putAsset(id, img);
+      busy(false);
+      chooseBackground({ mode: 'image', bg: id, key: 'own' }, 'Your backdrop');
+    } catch (err) { busy(false); toast(errorMessage(err), { type: 'error' }); }
+  });
+  more.append(tile({ label: 'Use my own', thumb: icons.upload, pressed: cur?.key === 'own', onClick: () => own.click() }), own);
+  o.append(h('div', { class: 'group-label' }, 'More'), more);
 
   if (cur) {
     const upd = (k) => (v) => { S.pending.params[k] = v; schedulePreview(); };
-    if (cur.mode !== 'color') o.append(slider({ name: 'Blur', value: cur.blur || 0, def: cur.mode === 'blur' ? 45 : 0, onInput: upd('blur') }));
+    o.append(slider({ name: 'Blur', value: cur.blur || 0, def: cur.mode === 'blur' ? 45 : 0, onInput: upd('blur') }));
     o.append(slider({ name: 'Blend light', value: cur.light || 0, def: 0, onInput: upd('light') }));
     o.append(slider({ name: 'Edge', value: cur.edge || 0, min: -100, max: 100, def: 0, onInput: upd('edge') }));
   }
+}
+
+// ----- Passport / ID photo
+const passportView = h('div', { class: 'passport-view', hidden: true }, h('img', { alt: 'Passport photo preview' }), h('div', { class: 'badge-before' }, 'Passport photo preview'));
+els.stage.append(passportView);
+function showPassportView(on) {
+  passportView.hidden = !on || !S.passport;
+}
+
+async function buildPassport() {
+  const spec = S.ui.ppSpec || 'icao';
+  const plain = Boolean(S.ui.ppPlain);
+  const hd = plain && S.ui.ppHd && S.config?.ai?.enabled;
+  S.abort = new AbortController();
+  busy(true, 'Making your passport photo', { sub: 'From your original photo', cancellable: hd });
+  try {
+    const getMask = async (img) => {
+      if (!hd) return segmentOnDevice(img);
+      if (!(await ensureConsent('cut you out in HD'))) throw new DOMException('Canceled', 'AbortError');
+      const s = Math.min(1, 2048 / Math.max(img.width, img.height));
+      const c = cropToCanvas(img, { x: 0, y: 0, w: img.width, h: img.height }, Math.round(img.width * s), Math.round(img.height * s));
+      const blob = await canvasToBlob(c, 'image/jpeg', 0.92);
+      c.width = 1; c.height = 1;
+      const out = await runAiJob({ feature: 'matte', blob, signal: S.abort.signal, onStage: (t) => busy(true, t, { cancellable: true }) });
+      return imgToMask(await blobToImg(out, 4096));
+    };
+    const result = await makePassport({
+      original: S.history.original, faces: S.faces, faceIndex: S.face, specId: spec, plainBackground: plain,
+      straighten: S.ui.ppStraighten !== false, getMask,
+    });
+    S.passport = result;
+    const blob = await canvasToBlob(result.canvas, 'image/jpeg', 0.92);
+    const img = passportView.querySelector('img');
+    if (img.src) URL.revokeObjectURL(img.src);
+    img.src = URL.createObjectURL(blob);
+    showPassportView(true);
+  } catch (err) {
+    if (err?.name !== 'AbortError') toast(errorMessage(err), { type: 'error', timeout: 8000 });
+  } finally {
+    S.abort = null;
+    busy(false);
+    renderOptions();
+  }
+}
+
+function optPassport(o) {
+  o.append(head('Passport photo', 'Made from your original photo — your face is never edited.'));
+  const miss = needsFace();
+  if (miss) { o.append(miss); return; }
+  S.ui.ppSpec = S.ui.ppSpec || 'icao';
+  const specs = h('div', { class: 'tiles', role: 'group', 'aria-label': 'Passport format' });
+  for (const [id, sp] of Object.entries(PASSPORT_SPECS)) {
+    const box = h('span', {});
+    const k = 40 / Math.max(sp.wMM, sp.hMM);
+    Object.assign(box.style, { width: `${sp.wMM * k}px`, height: `${sp.hMM * k}px`, border: '2px solid var(--plum)', borderRadius: '3px', display: 'block' });
+    specs.append(tile({ label: sp.short, thumb: box, pressed: S.ui.ppSpec === id, onClick: () => { S.ui.ppSpec = id; S.passport = null; showPassportView(false); renderOptions(); } }));
+  }
+  o.append(specs);
+  const sp = PASSPORT_SPECS[S.ui.ppSpec];
+  o.append(h('p', { class: 'opt-sub' }, `${sp.label} · head ${sp.headMM[0]}–${sp.headMM[1]} mm · background ${sp.bgLabel} · 600 dpi`));
+
+  const seg = h('div', { class: 'segmented', role: 'group', 'aria-label': 'Background' });
+  for (const [k, l] of [[false, 'Background as taken'], [true, 'Plain background']]) {
+    seg.append(h('button', { type: 'button', 'aria-pressed': String(Boolean(S.ui.ppPlain) === k), onclick: () => { S.ui.ppPlain = k; S.passport = null; showPassportView(false); renderOptions(); } }, l));
+  }
+  o.append(seg);
+  if (S.ui.ppPlain) {
+    o.append(h('div', { class: `notice ${sp.strict ? 'warn' : ''}` }, `Replacing the background is a digital edit. ${sp.editRule} ${sp.strict ? 'This may be rejected — a photo taken against a plain light wall is the safe choice.' : 'Use a plain light wall where possible.'}`));
+    if (S.config?.ai?.enabled) {
+      const q = h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: S.ui.ppHd ? true : null, onchange: (e) => { S.ui.ppHd = e.target.checked; S.passport = null; showPassportView(false); } }), h('span', {}, 'Use HD cut-out (AI service) for cleaner hair edges'));
+      o.append(q);
+    }
+  }
+  o.append(h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: S.ui.ppStraighten !== false ? true : null, onchange: (e) => { S.ui.ppStraighten = e.target.checked; S.passport = null; showPassportView(false); } }), h('span', {}, 'Straighten a tilted head')));
+  o.append(h('button', { type: 'button', class: 'btn btn-shine', id: 'pp-make', onclick: buildPassport }, h('span', {}, S.passport ? 'Re-create passport photo' : 'Create passport photo')));
+
+  if (S.passport) {
+    const list = h('ul', { class: 'pp-checks', 'aria-label': 'Automatic checks' });
+    for (const c of S.passport.checks) {
+      list.append(h('li', { class: `pp-${c.status}` }, h('span', { class: 'pp-mark', 'aria-hidden': 'true' }, c.status === 'ok' ? '✓' : c.status === 'warn' ? '!' : 'i'), h('span', {}, c.text)));
+    }
+    o.append(h('div', { class: 'group-label' }, 'Automatic checks (indicative — the authority decides)'), list);
+    const { spec } = S.passport;
+    const dl = h('div', { class: 'row-wrap' },
+      h('button', { type: 'button', class: 'btn btn-shine', id: 'pp-download', onclick: async () => {
+        const blob = await passportJpeg(S.passport);
+        saveBlob(blob, `careerstudio-passport-${S.ui.ppSpec}.jpg`);
+        toast(`Downloaded ${S.passport.outW} × ${S.passport.outH} px (${spec.wMM === 50.8 ? '2×2 in' : `${spec.wMM}×${spec.hMM} mm`} at 600 dpi).`);
+      } }, h('span', {}, 'Download photo')),
+      h('button', { type: 'button', class: 'btn', id: 'pp-sheet', onclick: async () => {
+        const { blob, copies } = await printSheet(S.passport);
+        saveBlob(blob, `careerstudio-passport-${S.ui.ppSpec}-print-10x15.jpg`);
+        toast(`Print sheet with ${copies} photos — print at 10×15 cm (4×6 in), 100% scale.`);
+      } }, 'Print sheet 10×15 cm'));
+    o.append(dl);
+  }
+}
+
+function saveBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = h('a', { href: url, download: name });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 // ----- Crop / framing

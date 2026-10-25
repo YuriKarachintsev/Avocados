@@ -1,9 +1,9 @@
 # CAREer Studio
 
-A mobile-first professional-photo editor: natural retouching, light and colour, office outfits for women and men, office backgrounds, smile and hair styling, and framing for LinkedIn, CVs and company profiles. Enquiries and applications are delivered to your Telegram.
+A mobile-first professional-photo editor: skin finishes, makeup, face shaping, luxury office and smart-casual outfits for women and men, hair finishes, modern-office and career-photoshoot backgrounds, passport photos, and framing for LinkedIn, CVs and company profiles. Enquiries and applications are delivered to your Telegram.
 
-- **On-device (free, nothing uploaded):** face finding & selection, Retouch (5 tools, combinable), Light looks, Adjust, Crop/framing, standard background cut-out with office backdrops, studio colours or blur, before/after compare, undo/redo, full-resolution download, Projects.
-- **AI service (Replicate, pay-per-use, opt-in per visit):** Outfit (16 styles), Smile (4), Hair (9), HD cut-out, photorealistic AI office backdrops (no photo sent).
+- **On-device (free, nothing uploaded):** face finding & selection; **Skin** (Fresh, Silk, Cute + smooth, even tone, eyes, teeth, under-eyes); **Face shape** (small face, cheekbones, defined chin); **Makeup** (lipstick ×5 shades, blush ×4, contouring, eyebrows ×4, eyelashes); Light looks; Adjust; standard cut-out with built-in modern-office and career-photoshoot studio backdrops, blur or your own image; **Passport photos** (Schengen/ICAO, UK, USA, UAE); Crop; before/after compare; undo/redo; full-resolution download; Projects.
+- **AI service (Replicate, pay-per-use, opt-in per visit):** **Outfit** (10 women's + 10 men's luxury-tailored looks, office and smart casual), **Hair** (Straight, Volume, Curly, Shiny, Texture, Keratin), Smile (4), HD cut-out, photorealistic AI modern offices (8, no photo sent).
 
 The server is plain Node.js with **no runtime dependencies**. API keys stay on the server.
 
@@ -31,7 +31,7 @@ All settings are environment variables — see `.env.example` for the full list.
 Models (override if you prefer others with the same inputs):
 | Purpose | Default | Notes |
 | --- | --- | --- |
-| Outfit, Smile, Hair, AI backdrops | `black-forest-labs/flux-kontext-pro` | Prompts are fixed presets in `server/ai-presets.js` |
+| Outfit, Smile, Hair, AI backdrops | `black-forest-labs/flux-kontext-pro` | Prompts are fixed presets in `server/ai-presets.js` (no brand names or logos) |
 | HD cut-out | `sprited/birefnet` (variant `portrait`) | Community package of BiRefNet (MIT). Pin a version with `owner/name:versionid` for stability |
 
 ### Telegram (enquiries & applications)
@@ -44,9 +44,23 @@ Models (override if you prefer others with the same inputs):
 - Colours and fonts are CSS tokens at the top of `public/css/app.css` (taken from the brand mockup: cream `#faf2eb`, ink `#391e21`, plum `#5e2f3b`, mauve CTA `#8a5a65`, copper sparkle `#ad6e3e`; Newsreader serif + the device's system font).
 - The primary buttons carry the diagonal light sweep (top-left → bottom-right), `.btn-shine`; it stops for visitors who prefer reduced motion.
 - Hero portrait: add a licensed photo at `public/brand/hero.jpg` (portrait orientation, ~1200×1600) and it appears on the home page automatically.
-- Office backdrops: original artwork in `public/backgrounds/` (regenerate with `npm run backgrounds:art`, needs Python + numpy/opencv/Pillow). Optional photoreal set: `npm run backgrounds:ai` (uses your Replicate key; check the model's output licence).
+- Backdrops: original artwork in `public/backgrounds/` — 7 modern offices and 9 career-photoshoot studio backdrops (regenerate with `npm run backgrounds:art`, needs Python + numpy/opencv/Pillow). Optional photoreal office set: `npm run backgrounds:ai` (uses your Replicate key; check the model's output licence).
+
+### Passport photos
+The Passport tool always starts from the **original** photo (no skin, makeup, shape or AI edits), straightens a tilted head, sizes the head to the official rule and exports at 600 dpi with a 10×15 cm print sheet. Formats and rules (checked 25 Oct 2026):
+
+| Format | Size | Head (chin–crown) | Background | Editing rule |
+| --- | --- | --- | --- | --- |
+| Schengen / ICAO | 35×45 mm | 32–36 mm | white / very light grey | no filters or retouching |
+| UK | 35×45 mm | 29–34 mm | plain cream or light grey | must be unaltered by software (GOV.UK) |
+| USA | 2×2 in | 25–35 mm | white / off-white | no digital changes, filters, apps or AI (travel.state.gov) |
+| UAE | 4.5×5.5 cm | 70–80 % of height | white | altered photos reported as rejected; official pages give inconsistent sizes — confirm with ICP |
+
+"Plain background" is optional and clearly marked as a digital edit; for the UK, USA and UAE the safe route is a photo taken against a plain light wall, and the tool's checks say so.
 
 ## Deploy with the domain careerstudioapp.com
+
+**Step-by-step click guide: [`docs/DEPLOY.md`](docs/DEPLOY.md).**
 
 The brief asks for a domain containing `careerstudioapp`. A search found no live site at careerstudioapp.com, but availability can only be confirmed at a registrar. Register it (or e.g. `careerstudioapp.app`) yourself.
 
@@ -74,9 +88,9 @@ If a step fails, the server log prints the provider's error detail (never the ph
 ## Tests
 
 ```bash
-npm test               # 21 server tests: API, AI job lifecycle, deletion, CSRF, SSRF guard, budget, rate limits, Telegram, opt-in
+npm test               # 22 server tests: API, AI job lifecycle, deletion, CSRF, SSRF guard, budget, rate limits, Telegram, opt-in
 npm i -D playwright && npx playwright install chromium
-npm run test:e2e       # browser: upload → retouch → light → AI outfit → HD background → AI backdrop → compare → crop → undo/redo/reset → download; contact form; projects; deletion; group photo; desktop + phone
+npm run test:e2e       # browser: upload → skin → face shape → makeup → light → AI outfit → AI hair → HD background → AI office → compare → passport (+ print sheet) → crop → undo/redo/reset → download; contact form; projects; deletion; group photo; desktop + phone
 ```
 
 The test doubles in `test/fakes.js` stand in for Replicate and Telegram and return synthetic patterns — they are never used by the running app.

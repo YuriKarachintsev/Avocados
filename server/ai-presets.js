@@ -5,39 +5,48 @@ const KEEP_IDENTITY =
   "Keep the person's identity, face, facial features, skin tone, skin texture, eyes, expression, head position, " +
   'body shape, pose, camera angle, framing, lighting and the background exactly the same. Photorealistic result.';
 
+// "Luxury" is described as quality and finish only — no brand names, logos or monograms.
+const LUXURY =
+  'Luxury-label tailoring quality: premium natural fabric with a subtle sheen, precise fit, sharp clean lines, ' +
+  'expertly pressed, understated and elegant. No visible logos, monograms, brand marks or text.';
+
 const outfit = (garment) =>
-  `Change only the person's clothing to ${garment}. The clothes should fit naturally and look like real fabric. ${KEEP_IDENTITY}`;
+  `Change only the person's clothing to ${garment}. ${LUXURY} The clothes should fit the person's body and pose naturally. ${KEEP_IDENTITY}`;
 
 const smile = (expr) =>
   `Change only the person's facial expression to ${expr}. Keep their identity, face shape, eyes, nose, skin, hair, pose, ` +
   'clothing, lighting and background exactly the same. Photorealistic result.';
 
-const hair = (style) =>
-  `Restyle only the person's hair to ${style}. Keep the same natural hair colour, face, facial features, skin, expression, ` +
-  'pose, clothing, lighting and background exactly the same. Photorealistic result.';
+const hair = (finish) =>
+  `Change only the person's hair to ${finish}. Keep the same natural hair colour and approximate length, and keep the face, ` +
+  'facial features, hairline, skin, expression, pose, clothing, lighting and background exactly the same. Photorealistic result.';
 
 export const EDIT_PRESETS = {
   outfit: {
     // Women — office
-    'w-office-navy': { label: 'Navy blazer & white blouse', prompt: outfit('a tailored navy blue blazer over a crisp white silk blouse') },
-    'w-office-black': { label: 'Black suit jacket', prompt: outfit('a tailored black suit jacket over a simple black round-neck top') },
-    'w-office-charcoal': { label: 'Charcoal dress & blazer', prompt: outfit('a charcoal grey sheath dress with a matching fitted blazer') },
-    'w-office-cream': { label: 'Cream blazer', prompt: outfit('a cream tailored blazer over an ivory blouse') },
+    'w-office-ivory': { label: 'Ivory double-breasted blazer', prompt: outfit('a tailored ivory double-breasted blazer in fine wool with peak lapels, worn over a silk camisole') },
+    'w-office-tuxedo': { label: 'Black tuxedo blazer', prompt: outfit('a black single-button tuxedo-style blazer with satin peak lapels over a crisp white silk blouse') },
+    'w-office-camel': { label: 'Camel cashmere blazer', prompt: outfit('a camel cashmere-blend blazer with structured shoulders over a cream silk shell top') },
+    'w-office-navy': { label: 'Navy blazer & bow blouse', prompt: outfit('a navy fine-wool blazer over a white silk blouse with a soft pussy-bow neckline') },
+    'w-office-greige': { label: 'Greige sheath & jacket', prompt: outfit('a greige crepe sheath dress with a softly structured matching collarless jacket') },
     // Women — smart casual
-    'w-smart-knit': { label: 'Camel fine knit', prompt: outfit('a fine camel-coloured knit sweater with a delicate round neckline') },
-    'w-smart-white': { label: 'Relaxed white shirt', prompt: outfit('a relaxed white button-up shirt with the top button open') },
-    'w-smart-blush': { label: 'Blush blouse & beige blazer', prompt: outfit('a soft blush-pink blouse under an unstructured beige blazer') },
-    'w-smart-chambray': { label: 'Chambray shirt', prompt: outfit('a smart light-blue chambray shirt') },
+    'w-smart-cashmere': { label: 'Cream cashmere roll-neck', prompt: outfit('a fine-gauge cream cashmere roll-neck sweater with minimal gold jewellery') },
+    'w-smart-silk': { label: 'Champagne silk shirt', prompt: outfit('a champagne silk shirt with a relaxed open collar and a delicate gold pendant') },
+    'w-smart-boucle': { label: 'Bouclé jacket', prompt: outfit('a soft blush bouclé tweed jacket with braided trim over a white fitted top') },
+    'w-smart-knitblazer': { label: 'Knit blazer & tee', prompt: outfit('a soft black knitted blazer over a white fitted crew-neck top') },
+    'w-smart-trench': { label: 'Trench collar & fine knit', prompt: outfit('a beige gabardine trench coat with the collar visible over a navy fine-knit top') },
     // Men — office
-    'm-office-charcoal': { label: 'Charcoal suit & navy tie', prompt: outfit('a charcoal grey two-piece suit, a white dress shirt and a navy silk tie') },
-    'm-office-navy': { label: 'Navy suit & burgundy tie', prompt: outfit('a navy blue suit, a light blue dress shirt and a burgundy tie') },
-    'm-office-opencollar': { label: 'Dark suit, open collar', prompt: outfit('a dark grey suit jacket over a white dress shirt with an open collar and no tie') },
-    'm-office-black': { label: 'Black suit & tie', prompt: outfit('a black suit, a white dress shirt and a black tie') },
+    'm-office-charcoal': { label: 'Charcoal suit & navy tie', prompt: outfit('a charcoal grey super-fine wool two-piece suit, a crisp white dress shirt and a navy silk grenadine tie') },
+    'm-office-chalk': { label: 'Navy chalk-stripe suit', prompt: outfit('a navy suit with a very subtle chalk stripe, a light-blue dress shirt and a burgundy silk tie') },
+    'm-office-3piece': { label: 'Midnight three-piece', prompt: outfit('a midnight-blue three-piece suit with a waistcoat, a white dress shirt and a silver-grey silk tie') },
+    'm-office-black': { label: 'Black suit & silk tie', prompt: outfit('a black slim-cut suit, a white dress shirt and a black silk tie') },
+    'm-office-glen': { label: 'Glen-check double-breasted', prompt: outfit('a grey glen-check double-breasted suit jacket, a white dress shirt and a dark-blue knitted silk tie') },
     // Men — smart casual
-    'm-smart-oxford': { label: 'Oxford shirt & navy blazer', prompt: outfit('a light blue oxford shirt under an unstructured navy blazer, no tie') },
-    'm-smart-merino': { label: 'Merino over collar', prompt: outfit('a navy merino crew-neck sweater over a white collared shirt') },
-    'm-smart-polo': { label: 'Knitted polo', prompt: outfit('a dark navy knitted polo shirt') },
-    'm-smart-white': { label: 'Crisp white shirt', prompt: outfit('a crisp white shirt with an open collar') },
+    'm-smart-camel': { label: 'Camel blazer, open collar', prompt: outfit('an unstructured camel cashmere blazer over a white shirt with an open collar') },
+    'm-smart-polo': { label: 'Knit polo & linen blazer', prompt: outfit('a navy fine merino knitted polo under a stone-coloured linen-blend blazer') },
+    'm-smart-rollneck': { label: 'Roll-neck & charcoal blazer', prompt: outfit('a black fine-gauge merino roll-neck under a charcoal wool blazer') },
+    'm-smart-oxford': { label: 'Oxford shirt & navy blazer', prompt: outfit('a light-blue oxford button-down shirt under a navy hopsack blazer, no tie') },
+    'm-smart-suede': { label: 'Suede jacket & white tee', prompt: outfit('a tan suede jacket over a white crew-neck T-shirt') },
   },
   smile: {
     soft: { label: 'Soft smile', prompt: smile('a soft, natural closed-mouth smile') },
@@ -46,15 +55,12 @@ export const EDIT_PRESETS = {
     neutral: { label: 'Relaxed neutral', prompt: smile('a relaxed, neutral expression') },
   },
   hair: {
-    tidy: { label: 'Tidy flyaways', prompt: hair('the same hairstyle, neat and tidy, with flyaway strands smoothed') },
-    'w-sleek': { label: 'Sleek straight', prompt: hair('sleek, straight, shoulder-length hair') },
-    'w-waves': { label: 'Soft waves', prompt: hair('soft, polished waves') },
-    'w-bun': { label: 'Neat low bun', prompt: hair('a neat, low bun') },
-    'w-bob': { label: 'Classic bob', prompt: hair('a classic chin-length bob') },
-    'm-sidepart': { label: 'Side part', prompt: hair('a neat, short side-parted haircut') },
-    'm-short': { label: 'Short & tidy', prompt: hair('a short, tidy haircut') },
-    'm-textured': { label: 'Textured crop', prompt: hair('a short textured crop') },
-    'm-slick': { label: 'Slicked back', prompt: hair('neatly slicked-back hair') },
+    straight: { label: 'Straight', prompt: hair('sleek, straight hair that is smooth from root to tip') },
+    volume: { label: 'Volume', prompt: hair('fuller, voluminous hair with natural lift at the roots') },
+    curly: { label: 'Curly', prompt: hair('defined, natural-looking curls with soft bounce') },
+    shiny: { label: 'Shiny', prompt: hair('the same hairstyle with healthy, glossy, light-reflecting shine') },
+    texture: { label: 'Texture', prompt: hair('the same hairstyle with soft, piece-y, textured definition') },
+    keratin: { label: 'Keratin', prompt: hair('a keratin-treatment finish: frizz-free, ultra-smooth, sleek and glossy hair') },
   },
 };
 
@@ -63,12 +69,14 @@ const BG = (scene) =>
   'Shallow depth of field, natural soft light, no people, no text, no logos, no watermark.';
 
 export const BACKGROUND_PRESETS = {
-  'ai-glass': { label: 'Modern glass office', prompt: BG('a modern office with glass walls and daylight') },
-  'ai-openplan': { label: 'Bright open-plan', prompt: BG('a bright open-plan office with plants and large windows') },
-  'ai-executive': { label: 'Executive office', prompt: BG('a warm executive office with wood panelling and bookshelves') },
-  'ai-meeting': { label: 'Meeting room', prompt: BG('a minimal light-grey meeting room') },
-  'ai-skyline': { label: 'City skyline', prompt: BG('an office window overlooking a city skyline in golden-hour light') },
-  'ai-cowork': { label: 'Co-working space', prompt: BG('a calm co-working space with warm lighting') },
+  'ai-glass': { label: 'Glass-walled office', prompt: BG('a modern office with floor-to-ceiling glass walls and daylight') },
+  'ai-openplan': { label: 'Open-plan with plants', prompt: BG('a bright modern open-plan office with plants and large windows') },
+  'ai-executive': { label: 'Executive office', prompt: BG('a modern executive office with warm wood panelling and bookshelves') },
+  'ai-minimal': { label: 'Minimal white office', prompt: BG('a minimalist white office with soft architectural lines') },
+  'ai-meeting': { label: 'Meeting room', prompt: BG('a light-grey modern meeting room with a glass partition') },
+  'ai-skyline': { label: 'City skyline', prompt: BG('a high-rise office window overlooking a city skyline in golden-hour light') },
+  'ai-lounge': { label: 'Business lounge', prompt: BG('a calm, elegant business lounge with warm lighting') },
+  'ai-cowork': { label: 'Co-working space', prompt: BG('a stylish co-working space with warm lighting and greenery') },
 };
 
 export const ASPECTS = new Set(['3:4', '4:3', '1:1', '2:3', '3:2']);

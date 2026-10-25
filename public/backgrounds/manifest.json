@@ -2,6 +2,7 @@
   {
     "id": "glass-office",
     "label": "Glass office",
+    "group": "office",
     "src": "/backgrounds/glass-office.jpg",
     "thumb": "/backgrounds/thumbs/glass-office.jpg",
     "credit": "Original artwork, CAREer Studio"
@@ -9,6 +10,7 @@
   {
     "id": "open-plan",
     "label": "Open-plan daylight",
+    "group": "office",
     "src": "/backgrounds/open-plan.jpg",
     "thumb": "/backgrounds/thumbs/open-plan.jpg",
     "credit": "Original artwork, CAREer Studio"
@@ -16,20 +18,15 @@
   {
     "id": "plants-light",
     "label": "Plants & window light",
+    "group": "office",
     "src": "/backgrounds/plants-light.jpg",
     "thumb": "/backgrounds/thumbs/plants-light.jpg",
     "credit": "Original artwork, CAREer Studio"
   },
   {
-    "id": "studio-cream",
-    "label": "Cream studio",
-    "src": "/backgrounds/studio-cream.jpg",
-    "thumb": "/backgrounds/thumbs/studio-cream.jpg",
-    "credit": "Original artwork, CAREer Studio"
-  },
-  {
     "id": "warm-library",
     "label": "Warm library",
+    "group": "office",
     "src": "/backgrounds/warm-library.jpg",
     "thumb": "/backgrounds/thumbs/warm-library.jpg",
     "credit": "Original artwork, CAREer Studio"
@@ -37,6 +34,7 @@
   {
     "id": "boardroom-grey",
     "label": "Boardroom grey",
+    "group": "office",
     "src": "/backgrounds/boardroom-grey.jpg",
     "thumb": "/backgrounds/thumbs/boardroom-grey.jpg",
     "credit": "Original artwork, CAREer Studio"
@@ -44,6 +42,7 @@
   {
     "id": "executive-navy",
     "label": "Executive navy",
+    "group": "office",
     "src": "/backgrounds/executive-navy.jpg",
     "thumb": "/backgrounds/thumbs/executive-navy.jpg",
     "credit": "Original artwork, CAREer Studio"
@@ -51,8 +50,81 @@
   {
     "id": "city-dusk",
     "label": "City window at dusk",
+    "group": "office",
     "src": "/backgrounds/city-dusk.jpg",
     "thumb": "/backgrounds/thumbs/city-dusk.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "studio-cream",
+    "label": "Cream studio",
+    "group": "studio",
+    "src": "/backgrounds/studio-cream.jpg",
+    "thumb": "/backgrounds/thumbs/studio-cream.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "studio-classic-grey",
+    "label": "Classic grey",
+    "group": "studio",
+    "src": "/backgrounds/studio-classic-grey.jpg",
+    "thumb": "/backgrounds/thumbs/studio-classic-grey.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "studio-warm-canvas",
+    "label": "Warm canvas",
+    "group": "studio",
+    "src": "/backgrounds/studio-warm-canvas.jpg",
+    "thumb": "/backgrounds/thumbs/studio-warm-canvas.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "studio-navy",
+    "label": "Navy studio",
+    "group": "studio",
+    "src": "/backgrounds/studio-navy.jpg",
+    "thumb": "/backgrounds/thumbs/studio-navy.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "studio-charcoal",
+    "label": "Charcoal low-key",
+    "group": "studio",
+    "src": "/backgrounds/studio-charcoal.jpg",
+    "thumb": "/backgrounds/thumbs/studio-charcoal.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "studio-soft-blue",
+    "label": "Soft blue",
+    "group": "studio",
+    "src": "/backgrounds/studio-soft-blue.jpg",
+    "thumb": "/backgrounds/thumbs/studio-soft-blue.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "studio-olive",
+    "label": "Olive painted",
+    "group": "studio",
+    "src": "/backgrounds/studio-olive.jpg",
+    "thumb": "/backgrounds/thumbs/studio-olive.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "studio-cream-seamless",
+    "label": "Cream seamless",
+    "group": "studio",
+    "src": "/backgrounds/studio-cream-seamless.jpg",
+    "thumb": "/backgrounds/thumbs/studio-cream-seamless.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "studio-white",
+    "label": "White high-key",
+    "group": "studio",
+    "src": "/backgrounds/studio-white.jpg",
+    "thumb": "/backgrounds/thumbs/studio-white.jpg",
     "credit": "Original artwork, CAREer Studio"
   }
 ]

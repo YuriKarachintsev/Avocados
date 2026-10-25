@@ -71,6 +71,26 @@ test('config never exposes secrets', async () => {
   } finally { await app.close(); }
 });
 
+test('style catalogue: 10 outfits per group, 6 hair finishes, no brand names', async () => {
+  const app = await boot();
+  try {
+    const { ai } = await (await app.call('/api/config')).json();
+    const w = ai.presets.outfit.filter((p) => p.id.startsWith('w-'));
+    const m = ai.presets.outfit.filter((p) => p.id.startsWith('m-'));
+    assert.equal(w.length, 10);
+    assert.equal(m.length, 10);
+    assert.equal(w.filter((p) => p.id.startsWith('w-office')).length, 5);
+    assert.equal(m.filter((p) => p.id.startsWith('m-smart')).length, 5);
+    assert.deepEqual(ai.presets.hair.map((p) => p.id), ['straight', 'volume', 'curly', 'shiny', 'texture', 'keratin']);
+    assert.equal(ai.presets.background.length, 8);
+    const { EDIT_PRESETS } = await import('../server/ai-presets.js');
+    const all = JSON.stringify(EDIT_PRESETS).toLowerCase();
+    for (const brand of ['chanel', 'armani', 'gucci', 'prada', 'dior', 'hermes', 'burberry', 'max mara', 'tom ford', 'zegna', 'brioni', 'loro piana', 'cucinelli', 'saint laurent']) {
+      assert.ok(!all.includes(brand), `no brand name: ${brand}`);
+    }
+  } finally { await app.close(); }
+});
+
 test('AI features report "not configured" without a token', async () => {
   const app = await boot();
   try {
@@ -86,7 +106,7 @@ test('outfit edit: upload → prediction → result, upload deleted afterwards',
   const rep = await startFakeReplicate();
   const app = await boot({ REPLICATE_API_TOKEN: 'test-token', REPLICATE_API_BASE: rep.apiBase, REPLICATE_OUTPUT_HOSTS: '127.0.0.1' });
   try {
-    const res = await app.call('/api/ai/jobs?feature=outfit&preset=m-office-navy', { method: 'POST', body: PHOTO, headers: { 'Content-Type': 'image/jpeg' } });
+    const res = await app.call('/api/ai/jobs?feature=outfit&preset=m-office-chalk', { method: 'POST', body: PHOTO, headers: { 'Content-Type': 'image/jpeg' } });
     assert.equal(res.status, 202);
     const job = await res.json();
     const st = await waitJob(app.call, job.id);
@@ -102,7 +122,9 @@ test('outfit edit: upload → prediction → result, upload deleted afterwards',
     assert.equal(rep.state.files.size, 0);
     const created = rep.state.created[0];
     assert.equal(created.model, 'black-forest-labs/flux-kontext-pro');
-    assert.match(created.input.prompt, /navy blue suit/);
+    assert.match(created.input.prompt, /chalk stripe/);
+    assert.match(created.input.prompt, /Luxury-label tailoring/);
+    assert.match(created.input.prompt, /No visible logos/);
     assert.match(created.input.prompt, /Keep the person's identity/);
     assert.equal(created.input.aspect_ratio, 'match_input_image');
   } finally { await app.close(); await rep.close(); }
@@ -171,7 +193,7 @@ test('provider failure becomes a friendly error and the upload is still deleted'
   const rep = await startFakeReplicate({ failWith: 'CUDA out of memory' });
   const app = await boot({ REPLICATE_API_TOKEN: 'test-token', REPLICATE_API_BASE: rep.apiBase, REPLICATE_OUTPUT_HOSTS: '127.0.0.1' });
   try {
-    const job = await (await app.call('/api/ai/jobs?feature=hair&preset=tidy', { method: 'POST', body: PHOTO, headers: { 'Content-Type': 'image/jpeg' } })).json();
+    const job = await (await app.call('/api/ai/jobs?feature=hair&preset=straight', { method: 'POST', body: PHOTO, headers: { 'Content-Type': 'image/jpeg' } })).json();
     const st = await waitJob(app.call, job.id);
     assert.equal(st.status, 'failed');
     assert.equal(st.error.code, 'provider_failed');

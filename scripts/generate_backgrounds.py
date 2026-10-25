@@ -246,28 +246,70 @@ def executive_navy(rng):
     return finish(img, rng, vignette=0.3)
 
 
-SCENES = [
-    ("glass-office", "Glass office", glass_office),
-    ("open-plan", "Open-plan daylight", open_plan),
-    ("plants-light", "Plants & window light", plants_light),
-    ("studio-cream", "Cream studio", studio_cream),
-    ("warm-library", "Warm library", warm_library),
-    ("boardroom-grey", "Boardroom grey", boardroom_grey),
-    ("executive-navy", "Executive navy", executive_navy),
-    ("city-dusk", "City window at dusk", city_dusk),
+# ---------------------------------------------------------------- career photoshoot backdrops
+def mottled(rng, base, light, dark, spot=0.22, mottle=0.09, vignette=0.28, cy=0.42):
+    """Hand-painted studio backdrop: multi-scale mottling + a soft light spot behind the subject."""
+    h = w = SIZE
+    noise = np.zeros((h, w), np.float32)
+    for sigma, amp in ((260, 1.0), (110, 0.55), (45, 0.25)):
+        n = rng.normal(0, 1, (h // 8, w // 8)).astype(np.float32)
+        n = cv2.resize(n, (w, h), interpolation=cv2.INTER_CUBIC)
+        n = cv2.GaussianBlur(n, (0, 0), sigmaX=sigma / 2)
+        n /= (np.abs(n).max() + 1e-6)
+        noise += n * amp
+    noise /= np.abs(noise).max() + 1e-6
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    d = np.sqrt(((xx - w / 2) / (w * 0.55)) ** 2 + ((yy - h * cy) / (h * 0.6)) ** 2)
+    glow = np.clip(1 - d, 0, 1) ** 1.6
+    t = np.clip(0.5 + noise * mottle * 4, 0, 1)[..., None]
+    col = hex_rgb(dark) * (1 - t) + hex_rgb(light) * t
+    col = col * 0.55 + hex_rgb(base) * 0.45
+    col = col * (1 + spot * glow[..., None])
+    img = col.astype(np.float32)
+    return finish(img, rng, vignette=vignette, grain=1.8)
+
+
+def seamless(rng, top, bottom, spot=0.08):
+    img = vgrad(top, bottom)
+    yy, xx = np.mgrid[0:SIZE, 0:SIZE].astype(np.float32)
+    d = np.sqrt(((xx - SIZE / 2) / (SIZE * 0.6)) ** 2 + ((yy - SIZE * 0.4) / (SIZE * 0.6)) ** 2)
+    img *= (1 + spot * np.clip(1 - d, 0, 1) ** 2)[..., None]
+    return finish(img, rng, vignette=0.1, grain=1.4)
+
+
+STUDIO = [
+    ("studio-classic-grey", "Classic grey", lambda r: mottled(r, "#7f8387", "#b4b8bc", "#50545a")),
+    ("studio-warm-canvas", "Warm canvas", lambda r: mottled(r, "#8a7563", "#c2ad97", "#5a4636")),
+    ("studio-navy", "Navy studio", lambda r: mottled(r, "#2c3c58", "#5b7193", "#18233a", spot=0.3)),
+    ("studio-charcoal", "Charcoal low-key", lambda r: mottled(r, "#333436", "#5d5f63", "#1c1d1f", spot=0.35, vignette=0.4)),
+    ("studio-soft-blue", "Soft blue", lambda r: mottled(r, "#93a8bd", "#c9d6e3", "#6f8399", spot=0.18)),
+    ("studio-olive", "Olive painted", lambda r: mottled(r, "#6f7260", "#a1a38c", "#45483a")),
+    ("studio-cream-seamless", "Cream seamless", lambda r: seamless(r, "#f4ece2", "#e2d4c3")),
+    ("studio-white", "White high-key", lambda r: seamless(r, "#fbfbfa", "#ececea", spot=0.03)),
 ]
+
+SCENES = [
+    ("glass-office", "Glass office", glass_office, "office"),
+    ("open-plan", "Open-plan daylight", open_plan, "office"),
+    ("plants-light", "Plants & window light", plants_light, "office"),
+    ("warm-library", "Warm library", warm_library, "office"),
+    ("boardroom-grey", "Boardroom grey", boardroom_grey, "office"),
+    ("executive-navy", "Executive navy", executive_navy, "office"),
+    ("city-dusk", "City window at dusk", city_dusk, "office"),
+    ("studio-cream", "Cream studio", studio_cream, "studio"),
+] + [(slug, label, fn, "studio") for slug, label, fn in STUDIO]
 
 
 def main():
     os.makedirs(THUMBS, exist_ok=True)
     manifest = []
-    for i, (slug, label, fn) in enumerate(SCENES):
+    for i, (slug, label, fn, group) in enumerate(SCENES):
         rng = np.random.default_rng(1000 + i)
         img = fn(rng)
         Image.fromarray(img).save(os.path.join(OUT, f"{slug}.jpg"), quality=86, optimize=True, progressive=True)
         Image.fromarray(img).resize((320, 320), Image.LANCZOS).save(
             os.path.join(THUMBS, f"{slug}.jpg"), quality=82, optimize=True)
-        manifest.append({"id": slug, "label": label, "src": f"/backgrounds/{slug}.jpg",
+        manifest.append({"id": slug, "label": label, "group": group, "src": f"/backgrounds/{slug}.jpg",
                          "thumb": f"/backgrounds/thumbs/{slug}.jpg", "credit": "Original artwork, CAREer Studio"})
         print("wrote", slug)
     with open(os.path.join(OUT, "manifest.json"), "w") as f:

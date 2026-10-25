@@ -15,7 +15,7 @@ export async function ensureConsent(feature) {
     h('ul', {},
       h('li', {}, 'Our server keeps the photo in memory only while the edit runs. It is not saved to disk or logged.'),
       h('li', {}, 'The upload to Replicate is deleted as soon as the edit finishes; Replicate removes remaining prediction data automatically after about an hour.'),
-      h('li', {}, 'Your original stays on this device. Retouch, Light, Adjust, Crop and the standard background cut-out work without uploading anything.'),
+      h('li', {}, 'Your original stays on this device. Skin, Face, Makeup, Light, Adjust, Passport, Crop and the standard background cut-out work without uploading anything.'),
       h('li', {}, 'Only upload photos of yourself, or of people who have agreed to it.'),
     ),
     h('p', {}, h('a', { href: '/privacy', target: '_blank', rel: 'noopener' }, 'Read the privacy notice')),

@@ -159,3 +159,19 @@ input[type='range'].range::-moz-range-thumb { width: 22px; height: 22px; border-
 .no-photo .ed-panel, .no-photo .ed-top .btn { display: none; }
 
 .editor-body .toast-host { top: calc(66px + var(--safe-t)); bottom: auto; }
+
+/* makeup colour swatches */
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+.swatch { width: 34px; height: 34px; border-radius: 50%; border: 2px solid #fff; background: var(--sw); box-shadow: 0 0 0 1px var(--line-strong); padding: 0; }
+.swatch[aria-checked='true'] { box-shadow: 0 0 0 2px var(--copper); }
+
+/* passport preview + checks */
+.passport-view { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: var(--stage); padding: 24px; }
+.passport-view img { position: absolute; inset: 24px; margin: auto; max-width: calc(100% - 48px); max-height: calc(100% - 48px); box-shadow: 0 16px 36px -18px rgba(57, 30, 33, 0.6); background: #fff; outline: 1px solid rgba(57, 30, 33, 0.18); }
+.pp-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pp-checks li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: .88rem; align-items: start; }
+.pp-mark { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: .72rem; font-weight: 700; color: #fff; margin-top: 1px; }
+.pp-ok .pp-mark { background: var(--ok); }
+.pp-warn .pp-mark { background: #b5651d; }
+.pp-info .pp-mark { background: var(--mauve); }
+.pp-warn { color: #6b3a10; }

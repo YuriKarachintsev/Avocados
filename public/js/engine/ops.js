@@ -4,9 +4,7 @@ import {
   clamp01, smoothstep, lum, createImg, cloneImg, resizeMask, resizeRGBA, sampleRGBA, boxBlur, gaussBlur, guidedFilter,
   fillPolygon, fillEllipse, scalePoly, polygonArea,
 } from './raster.js';
-import {
-  faceMetrics, facePolygon, eyePolys, mouthOuter, mouthInner, browPolys, nostrilPoly, scaleLandmarks, boxOf,
-} from './face.js';
+import { applyRetouch, applyMakeup, applyReshape } from './face-ops.js';
 
 // ---------------------------------------------------------------- looks
 export const LOOKS = {
@@ -38,6 +36,8 @@ export function applyOp(img, op, ctx) {
     case 'adjust': return applyAdjust(img, op.params, ctx);
     case 'look': return applyLook(img, op.params, ctx);
     case 'retouch': return applyRetouch(img, op.params, ctx);
+    case 'makeup': return applyMakeup(img, op.params, ctx);
+    case 'reshape': return applyReshape(img, op.params, ctx);
     case 'background': return applyBackground(img, op.params, ctx);
     case 'aiComposite': return applyAiComposite(img, op.params, ctx);
     case 'frame': return img; // framing is applied at display/export time
@@ -131,176 +131,8 @@ export function applyAdjust(img, params) {
   return out;
 }
 
-// ---------------------------------------------------------------- retouch (face-only)
-export const RETOUCH_ITEMS = [
-  { key: 'smooth', label: 'Smooth skin', def: 45 },
-  { key: 'even', label: 'Even tone', def: 40 },
-  { key: 'eyes', label: 'Brighten eyes', def: 35 },
-  { key: 'teeth', label: 'Whiten teeth', def: 40 },
-  { key: 'underEye', label: 'Under-eyes', def: 40 },
-];
-
-export function applyRetouch(img, params, ctx) {
-  const face = ctx.faces?.[params.face ?? 0];
-  if (!face) return cloneImg(img);
-  const s = img.width / ctx.fullWidth;
-  const out = cloneImg(img);
-  const lmFull = scaleLandmarks(face.landmarks, s);
-  const { faceW } = faceMetrics(lmFull);
-  if (faceW < 24) return out;
-
-  // Work inside the face's bounding region only.
-  const bb = boxOf(facePolygon(lmFull, 0.45));
-  const pad = faceW * 0.12;
-  const rx = Math.max(0, Math.floor(bb.x - pad)); const ry = Math.max(0, Math.floor(bb.y - pad));
-  const rx1 = Math.min(img.width, Math.ceil(bb.x + bb.w + pad)); const ry1 = Math.min(img.height, Math.ceil(bb.y + bb.h + pad));
-  const w = rx1 - rx; const h = ry1 - ry;
-  if (w < 8 || h < 8) return out;
-  const lm = lmFull.map(([x, y]) => [x - rx, y - ry]);
-  const n = w * h;
-
-  // Channels in 0–1
-  const R = new Float32Array(n); const G = new Float32Array(n); const B = new Float32Array(n);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = ((y + ry) * img.width + (x + rx)) * 4; const p = y * w + x;
-      R[p] = img.data[i] / 255; G[p] = img.data[i + 1] / 255; B[p] = img.data[i + 2] / 255;
-    }
-  }
-
-  // Skin mask: face outline minus eyes, brows, lips and nostrils, gated by skin colour.
-  const skin = new Float32Array(n);
-  fillPolygon(skin, w, h, facePolygon(lm, 0.3), 1);
-  for (const e of eyePolys(lm)) fillPolygon(skin, w, h, scalePoly(e, 1.9), 0);
-  for (const b of browPolys(lm, faceW * 0.035)) fillPolygon(skin, w, h, scalePoly(b, 1.15), 0);
-  fillPolygon(skin, w, h, scalePoly(mouthOuter(lm), 1.12), 0);
-  fillPolygon(skin, w, h, scalePoly(nostrilPoly(lm), 1.2), 0);
-  // reference skin colour from cheeks
-  const refPts = [lm[2], lm[3], lm[13], lm[14], lm[29], lm[30]];
-  let mCb = 0; let mCr = 0; let cnt = 0;
-  for (let k = 0; k < refPts.length; k++) {
-    const t = k < 4 ? 0.35 : 0;
-    const px = Math.round(refPts[k][0] + (lm[30][0] - refPts[k][0]) * t);
-    const py = Math.round(refPts[k][1] + (lm[30][1] - refPts[k][1]) * t);
-    if (px < 0 || py < 0 || px >= w || py >= h) continue;
-    const p = py * w + px;
-    mCb += -0.1146 * R[p] - 0.3854 * G[p] + 0.5 * B[p];
-    mCr += 0.5 * R[p] - 0.4542 * G[p] - 0.0458 * B[p];
-    cnt++;
-  }
-  if (cnt) { mCb /= cnt; mCr /= cnt; }
-  for (let p = 0; p < n; p++) {
-    if (!skin[p]) continue;
-    const cb = -0.1146 * R[p] - 0.3854 * G[p] + 0.5 * B[p];
-    const cr = 0.5 * R[p] - 0.4542 * G[p] - 0.0458 * B[p];
-    const dc = Math.sqrt((cb - mCb) ** 2 + (cr - mCr) ** 2);
-    if (cnt) skin[p] *= smoothstep(0.06, 0.025, dc); // 1 for skin-like colour, fading out for hair, glasses, etc.
-  }
-  const skinM = gaussBlur(skin, w, h, Math.max(1, faceW * 0.02));
-
-  const t = (k) => Math.max(0, Math.min(100, params[k] || 0)) / 100;
-
-  if (t('smooth') > 0) {
-    const r = Math.max(2, Math.round(faceW * 0.018));
-    const eps = 0.0022;
-    const k = t('smooth') * 0.78;
-    for (const C of [R, G, B]) {
-      const q = guidedFilter(C, C, w, h, r, eps);
-      for (let p = 0; p < n; p++) C[p] -= skinM[p] * k * (C[p] - q[p]);
-    }
-  }
-
-  if (t('even') > 0) {
-    // Pull chroma toward its local (skin-only) average; luminance detail untouched.
-    const k = t('even') * 0.6;
-    const Cb = new Float32Array(n); const Cr = new Float32Array(n); const Yc = new Float32Array(n);
-    const wCb = new Float32Array(n); const wCr = new Float32Array(n);
-    for (let p = 0; p < n; p++) {
-      Yc[p] = 0.2126 * R[p] + 0.7152 * G[p] + 0.0722 * B[p];
-      Cb[p] = -0.1146 * R[p] - 0.3854 * G[p] + 0.5 * B[p];
-      Cr[p] = 0.5 * R[p] - 0.4542 * G[p] - 0.0458 * B[p];
-      wCb[p] = Cb[p] * skinM[p]; wCr[p] = Cr[p] * skinM[p];
-    }
-    const rad = Math.max(3, faceW * 0.06);
-    const den = gaussBlur(skinM, w, h, rad); const nb = gaussBlur(wCb, w, h, rad); const nr = gaussBlur(wCr, w, h, rad);
-    for (let p = 0; p < n; p++) {
-      if (skinM[p] < 0.01 || den[p] < 0.02) continue;
-      const m = skinM[p] * k;
-      const cb = Cb[p] + m * (nb[p] / den[p] - Cb[p]);
-      const cr = Cr[p] + m * (nr[p] / den[p] - Cr[p]);
-      const y = Yc[p];
-      R[p] = y + 1.5748 * cr; G[p] = y - 0.1873 * cb - 0.4681 * cr; B[p] = y + 1.8556 * cb;
-    }
-  }
-
-  if (t('eyes') > 0) {
-    const m = new Float32Array(n);
-    for (const e of eyePolys(lm)) fillPolygon(m, w, h, scalePoly(e, 1.35), 1);
-    const mm = gaussBlur(m, w, h, Math.max(1, faceW * 0.01));
-    const Y = new Float32Array(n);
-    for (let p = 0; p < n; p++) Y[p] = 0.2126 * R[p] + 0.7152 * G[p] + 0.0722 * B[p];
-    const by = gaussBlur(Y, w, h, Math.max(1, faceW * 0.008));
-    const k = t('eyes');
-    for (let p = 0; p < n; p++) {
-      if (mm[p] < 0.01) continue;
-      const y = Y[p];
-      const y2 = y + mm[p] * k * (0.09 * (1 - y) + 0.55 * (y - by[p]));
-      const f = y > 0.003 ? y2 / y : 1;
-      R[p] *= f; G[p] *= f; B[p] *= f;
-    }
-  }
-
-  if (t('teeth') > 0) {
-    const inner = mouthInner(lm);
-    if (polygonArea(inner) > faceW * faceW * 0.002) {
-      const m = new Float32Array(n);
-      fillPolygon(m, w, h, scalePoly(inner, 1.05), 1);
-      const mm = gaussBlur(m, w, h, Math.max(1, faceW * 0.006));
-      const k = t('teeth');
-      for (let p = 0; p < n; p++) {
-        if (mm[p] < 0.01) continue;
-        const r = R[p]; const g = G[p]; const b = B[p];
-        const y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-        const mx = Math.max(r, g, b); const mn = Math.min(r, g, b);
-        const sat = mx > 0 ? (mx - mn) / mx : 0;
-        const tw = smoothstep(0.32, 0.6, y) * (1 - smoothstep(0.28, 0.55, sat)) * mm[p] * k;
-        const yy = Math.min(1, y * (1 + 0.1 * tw));
-        R[p] = r + (yy - r) * tw * 0.65; G[p] = g + (yy - g) * tw * 0.65; B[p] = b + (yy * 1.01 - b) * tw * 0.75;
-      }
-    }
-  }
-
-  if (t('underEye') > 0) {
-    const m = new Float32Array(n);
-    for (const e of eyePolys(lm)) {
-      const ew = Math.hypot(e[3][0] - e[0][0], e[3][1] - e[0][1]);
-      const cx = (e[0][0] + e[3][0]) / 2;
-      const bottom = Math.max(e[4][1], e[5][1]);
-      fillEllipse(m, w, h, cx, bottom + ew * 0.32, ew * 0.55, ew * 0.24, 1);
-    }
-    const mm = gaussBlur(m, w, h, Math.max(1, faceW * 0.02));
-    const Y = new Float32Array(n);
-    for (let p = 0; p < n; p++) Y[p] = 0.2126 * R[p] + 0.7152 * G[p] + 0.0722 * B[p];
-    const surround = gaussBlur(Y, w, h, Math.max(2, faceW * 0.05));
-    const k = t('underEye');
-    for (let p = 0; p < n; p++) {
-      const mk = mm[p] * skinM[p];
-      if (mk < 0.01) continue;
-      const y = Y[p];
-      const lift = Math.max(0, surround[p] - y) * 0.75 + 0.02 * (1 - y);
-      const f = y > 0.003 ? (y + mk * k * lift) / y : 1;
-      R[p] *= f; G[p] *= f; B[p] *= f;
-    }
-  }
-
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = ((y + ry) * img.width + (x + rx)) * 4; const p = y * w + x;
-      out.data[i] = R[p] * 255; out.data[i + 1] = G[p] * 255; out.data[i + 2] = B[p] * 255;
-    }
-  }
-  return out;
-}
+// ---------------------------------------------------------------- face edits live in face-ops.js
+export { RETOUCH_ITEMS, SKIN_LOOKS, MAKEUP_ITEMS, SHAPE_ITEMS } from './face-ops.js';
 
 // ---------------------------------------------------------------- background replacement
 export const STUDIO_COLOURS = {
@@ -407,6 +239,14 @@ function estimateBackground(small, aSmall, r) {
 
 function buildBackground(params, ctx, w, h, small, aSmall, bgEst) {
   const blur = (params.blur || 0) / 100;
+  if (params.mode === 'flat') {
+    const v = parseInt(String(params.hex || '#ffffff').replace('#', ''), 16);
+    const out = createImg(w, h);
+    for (let i = 0; i < out.data.length; i += 4) {
+      out.data[i] = (v >> 16) & 255; out.data[i + 1] = (v >> 8) & 255; out.data[i + 2] = v & 255; out.data[i + 3] = 255;
+    }
+    return out;
+  }
   if (params.mode === 'color') {
     const c = STUDIO_COLOURS[params.color] || STUDIO_COLOURS.cream;
     const out = createImg(w, h);
