@@ -1,0 +1,23 @@
+{
+  "name": "careerstudio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CAREer Studio — professional photo editor with on-device retouching and AI outfits, hair, smile and office backgrounds.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.10"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test test/server.test.js",
+    "test:e2e": "node test/e2e.mjs",
+    "telegram:chat-id": "node scripts/telegram-chat-id.js",
+    "backgrounds:ai": "node scripts/generate-ai-backgrounds.js",
+    "backgrounds:art": "python3 scripts/generate_backgrounds.py"
+  },
+  "devDependencies": {
+    "playwright": "^1.50.0"
+  },
+  "license": "UNLICENSED"
+}

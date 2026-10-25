@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Privacy — CAREer Studio</title>
+  <meta name="theme-color" content="#faf2eb">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/static-page.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" data-brand aria-label="CAREer Studio home"></a>
+    <nav class="top-links" data-top-links aria-label="Main"></nav>
+    <span></span>
+  </header>
+  <main class="page wrap">
+    <article class="prose">
+      <div class="page-head"><h1>How we handle your photos</h1><p>Plain-language summary. Template — have it reviewed for your jurisdiction before launch.</p></div>
+
+      <h2>On your device</h2>
+      <p>When you open a photo, it is decoded in your browser. Retouch, Light, Adjust, Crop, face finding and the standard background cut-out all run on your device; the photo is not uploaded for these tools. Downloads are created in your browser and carry no location data.</p>
+
+      <h2>When you choose an AI tool</h2>
+      <p>Outfit, Hair, Smile, HD cut-out and AI office backgrounds use an external AI service. Before the first upload in a visit, we ask for your agreement. Then:</p>
+      <ul>
+        <li>A resized copy of the photo, or only the area being edited, is sent from your browser to our server and on to Replicate, Inc. (USA), which runs the AI model.</li>
+        <li>Our server holds the photo in memory only while the edit runs. It is not written to disk or logged, and unclaimed results are discarded after 10 minutes.</li>
+        <li>The copy uploaded to Replicate is deleted as soon as the edit finishes. Replicate automatically removes remaining prediction inputs and outputs about one hour after an API request.</li>
+        <li>AI office backgrounds are created from a text description only; no photo is sent.</li>
+      </ul>
+
+      <h2>Projects</h2>
+      <p>“Save to Projects” keeps a copy in this browser's storage (IndexedDB) on this device only. Delete one photo in Projects, or everything under Profile ▸ Your data.</p>
+
+      <h2>Enquiries and applications</h2>
+      <p>If you send the contact form, your details, message and optional CV are delivered to the CAREer Studio team through Telegram, which stores them on its servers. A photo is attached only if you add one and tick the separate photo-sharing box. To have your submission deleted, contact us.</p>
+
+      <h2>What we don't do</h2>
+      <ul>
+        <li>We don't use your photos to train AI models.</li>
+        <li>We don't build face templates or biometric profiles. Face landmarks are computed in your browser only to place edits and are discarded with the page.</li>
+        <li>We don't use advertising or tracking cookies. A short-lived, strictly necessary session cookie links your browser to AI edits in progress.</li>
+      </ul>
+
+      <h2>Your choices</h2>
+      <ul>
+        <li>Delete a photo in the editor (⋯ ▸ Delete this photo).</li>
+        <li>Withdraw AI consent or delete everything stored on this device under <a href="/profile#data">Profile ▸ Your data</a>.</li>
+        <li>Only upload photos of yourself, or of people who have agreed.</li>
+      </ul>
+    </article>
+  </main>
+</body>
+</html>

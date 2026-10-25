@@ -1,0 +1,28 @@
+# Render Blueprint — New ▸ Blueprint ▸ connect this repo. Secrets are entered in the dashboard.
+services:
+  - type: web
+    name: careerstudio
+    runtime: node
+    plan: starter            # always-on; the free plan sleeps after 15 min idle
+    buildCommand: npm install --omit=dev
+    startCommand: node server/index.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: PUBLIC_ORIGIN
+        value: https://careerstudioapp.com
+      - key: ALLOWED_ORIGINS
+        value: https://www.careerstudioapp.com
+      - key: DAILY_AI_BUDGET_USD
+        value: "5"
+      - key: REPLICATE_API_TOKEN
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: CONTACT_EMAIL
+        sync: false

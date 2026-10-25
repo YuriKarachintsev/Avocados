@@ -1,0 +1,14 @@
+{
+  "name": "CAREer Studio",
+  "short_name": "CAREer Studio",
+  "description": "Professional photos for LinkedIn, your CV and company profiles.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf2eb",
+  "theme_color": "#faf2eb",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

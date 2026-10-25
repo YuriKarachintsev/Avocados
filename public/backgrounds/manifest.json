@@ -1,0 +1,58 @@
+[
+  {
+    "id": "glass-office",
+    "label": "Glass office",
+    "src": "/backgrounds/glass-office.jpg",
+    "thumb": "/backgrounds/thumbs/glass-office.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "open-plan",
+    "label": "Open-plan daylight",
+    "src": "/backgrounds/open-plan.jpg",
+    "thumb": "/backgrounds/thumbs/open-plan.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "plants-light",
+    "label": "Plants & window light",
+    "src": "/backgrounds/plants-light.jpg",
+    "thumb": "/backgrounds/thumbs/plants-light.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "studio-cream",
+    "label": "Cream studio",
+    "src": "/backgrounds/studio-cream.jpg",
+    "thumb": "/backgrounds/thumbs/studio-cream.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "warm-library",
+    "label": "Warm library",
+    "src": "/backgrounds/warm-library.jpg",
+    "thumb": "/backgrounds/thumbs/warm-library.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "boardroom-grey",
+    "label": "Boardroom grey",
+    "src": "/backgrounds/boardroom-grey.jpg",
+    "thumb": "/backgrounds/thumbs/boardroom-grey.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "executive-navy",
+    "label": "Executive navy",
+    "src": "/backgrounds/executive-navy.jpg",
+    "thumb": "/backgrounds/thumbs/executive-navy.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  },
+  {
+    "id": "city-dusk",
+    "label": "City window at dusk",
+    "src": "/backgrounds/city-dusk.jpg",
+    "thumb": "/backgrounds/thumbs/city-dusk.jpg",
+    "credit": "Original artwork, CAREer Studio"
+  }
+]

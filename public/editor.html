@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Photo editor — CAREer Studio</title>
+  <meta name="description" content="Edit your professional photo: retouch, light, outfit, office background and more.">
+  <meta name="theme-color" content="#faf2eb">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <link rel="preload" href="/fonts/newsreader-latin.woff" as="font" type="font/woff" crossorigin>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/editor.css">
+  <script type="module" src="/js/editor/main.js"></script>
+</head>
+<body class="editor-body no-photo">
+  <header class="ed-top">
+    <a class="brand" href="/" data-brand aria-label="CAREer Studio home"></a>
+    <span class="spacer"></span>
+    <button class="btn btn-icon" id="btn-undo" type="button" aria-label="Undo" title="Undo (Ctrl+Z)" disabled data-icon="undo"></button>
+    <button class="btn btn-icon" id="btn-redo" type="button" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" disabled data-icon="redo"></button>
+    <button class="btn btn-icon" id="btn-compare" type="button" aria-label="Hold to see the original" title="Hold to see the original" disabled data-icon="compare"></button>
+    <button class="btn btn-icon" id="btn-split" type="button" aria-label="Before and after slider" title="Before / after slider" aria-pressed="false" disabled data-icon="split"></button>
+    <button class="btn btn-icon" id="btn-more" type="button" aria-label="More actions" aria-haspopup="menu" aria-expanded="false" disabled data-icon="more"></button>
+    <button class="btn btn-shine download" id="btn-download" type="button" disabled><span data-icon="download"></span><span class="label">Download</span></button>
+    <div class="menu" id="menu" role="menu" hidden>
+      <button type="button" role="menuitem" id="m-save" data-icon="save">Save to Projects</button>
+      <button type="button" role="menuitem" id="m-png" data-icon="download">Download as PNG (lossless)</button>
+      <button type="button" role="menuitem" id="m-share" data-icon="share" hidden>Share…</button>
+      <button type="button" role="menuitem" id="m-new" data-icon="upload">Open another photo</button>
+      <button type="button" role="menuitem" id="m-reset" data-icon="reset">Reset all edits</button>
+      <button type="button" role="menuitem" id="m-delete" class="danger" data-icon="trash">Delete this photo</button>
+    </div>
+  </header>
+
+  <main class="ed-main">
+    <section class="ed-stage" id="stage" aria-label="Photo">
+      <canvas id="view" aria-hidden="true"></canvas>
+
+      <div class="upload" id="upload">
+        <div class="upload-card">
+          <h1>Start with a clear photo of you</h1>
+          <p class="lede">Face the camera in soft, even light. One person works best; for group photos you'll pick whose face to edit.</p>
+          <div class="dropzone" id="dropzone">
+            <div class="btns">
+              <label class="btn btn-shine btn-cta" for="file-input">
+                <span class="lead"><span data-icon="image"></span><span>Choose a photo</span></span><span data-icon="arrowRight"></span>
+              </label>
+              <label class="btn" for="camera-input" id="camera-label"><span data-icon="camera"></span>Take a photo</label>
+            </div>
+            <p class="hint upload-privacy">Or drop a JPEG, PNG or WebP here (up to 30 MB). Your photo opens on this device — nothing is uploaded until you choose an AI tool and agree.</p>
+          </div>
+          <div class="notice error" id="upload-error" role="alert" hidden></div>
+          <ul class="upload-tips">
+            <li>Retouch, Light, Adjust, Crop and the standard background run entirely on your device.</li>
+            <li>Outfit, Hair, Smile, HD cut-out and AI office backgrounds use our AI service.</li>
+          </ul>
+        </div>
+        <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" class="sr-only">
+        <input type="file" id="camera-input" accept="image/*" capture="user" class="sr-only">
+      </div>
+
+      <div class="busy" id="busy" role="status" aria-live="polite" hidden>
+        <div class="busy-card">
+          <div class="spinner" aria-hidden="true"></div>
+          <div class="stage" id="busy-stage">Working…</div>
+          <div class="progress" aria-hidden="true"><i></i></div>
+          <div class="sub" id="busy-sub"></div>
+          <button class="btn btn-sm" id="busy-cancel" type="button" hidden>Cancel</button>
+        </div>
+      </div>
+      <div class="face-hint" id="face-hint" hidden>Tap the face you want to edit</div>
+    </section>
+
+    <aside class="ed-panel" id="panel" aria-label="Editing tools">
+      <div class="ed-options" id="options" aria-live="polite"></div>
+      <nav class="ed-tools" id="tools" role="tablist" aria-label="Tool categories"></nav>
+    </aside>
+  </main>
+</body>
+</html>

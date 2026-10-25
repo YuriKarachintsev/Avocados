@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>CAREer Studio — Your professional photo, anywhere</title>
+  <meta name="description" content="Turn a clear selfie into a professional photo for LinkedIn, your CV or your company profile: natural retouch, office outfits and office backgrounds.">
+  <meta name="theme-color" content="#faf2eb">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <link rel="preload" href="/fonts/newsreader-latin.woff" as="font" type="font/woff" crossorigin>
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/home.js"></script>
+</head>
+<body>
+  <header class="topbar over-hero">
+    <a class="brand" href="/" data-brand aria-label="CAREer Studio home"></a>
+    <nav class="top-links" data-top-links aria-label="Main"></nav>
+    <a class="round-btn" href="/profile#data" aria-label="Privacy and settings" data-icon="gear"></a>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div class="hero-backdrop"><img src="/backgrounds/glass-office.jpg" alt=""></div>
+      <div class="hero-portrait" id="hero-portrait" hidden><img alt="" id="hero-portrait-img"></div>
+      <div class="wrap hero-copy">
+        <h1>Your Professional Photo, Anywhere</h1>
+        <p class="lede">Professional photos in minutes.</p>
+        <div class="chips" aria-label="Start with a format">
+          <a class="chip" href="/editor?format=linkedin" data-icon="idCard">LinkedIn</a>
+          <a class="chip" href="/editor?format=cv" data-icon="doc">CV</a>
+          <a class="chip" href="/editor?format=corporate" data-icon="briefcase">Corporate</a>
+        </div>
+        <div class="hero-cta">
+          <a class="btn btn-shine btn-cta" href="/editor">
+            <span class="lead"><span data-icon="camera"></span><span>Create Professional Photo</span></span>
+            <span data-icon="arrowRight"></span>
+          </a>
+        </div>
+        <p class="hero-note">Retouching and framing happen on your device. AI outfits, hair and HD backgrounds only run after you agree.</p>
+      </div>
+    </section>
+
+    <section class="section wrap" aria-labelledby="how">
+      <div class="section-head">
+        <h2 id="how">From selfie to profile photo</h2>
+        <p>Three steps, no studio booking.</p>
+      </div>
+      <ol class="steps">
+        <li><div><h3>Add a photo</h3><p>A well-lit photo facing the camera works best. Take one now or choose one you have.</p></div></li>
+        <li><div><h3>Make it professional</h3><p>Retouch gently, pick an office outfit, place yourself in an office and frame it for LinkedIn or your CV.</p></div></li>
+        <li><div><h3>Download in full quality</h3><p>Compare before and after, undo anything, then download at your photo's full resolution.</p></div></li>
+      </ol>
+    </section>
+
+    <section class="section wrap" aria-labelledby="what">
+      <div class="section-head">
+        <h2 id="what">What you can change</h2>
+        <p>Each tool works only on its own area, so the rest of your photo — and your face — stays as it is.</p>
+      </div>
+      <div class="features">
+        <div class="feature"><h3>Retouch</h3><span class="tag">On your device</span><p>Smooth skin, even tone, brighter eyes, whiter teeth and softer under-eyes — each with its own strength slider, applied to your face only.</p></div>
+        <div class="feature"><h3>Light &amp; adjust</h3><span class="tag">On your device</span><p>Studio, warm or cool looks plus brightness, contrast, highlights, shadows, warmth and clarity.</p></div>
+        <div class="feature"><h3>Office backgrounds</h3><span class="tag">On device or AI</span><p>Glass offices, libraries, studio colours or a soft blur. HD cut-out and photorealistic AI offices are optional.</p></div>
+        <div class="feature"><h3>Outfits</h3><span class="tag ai">AI</span><p>Office and smart-casual styles for women and men. Your original face is kept pixel for pixel.</p></div>
+        <div class="feature"><h3>Hair &amp; smile</h3><span class="tag ai">AI</span><p>Tidy flyaways, try a neat style, or soften your expression. These change how you look, so they are always your choice.</p></div>
+        <div class="feature"><h3>Framing</h3><span class="tag">On your device</span><p>LinkedIn square, CV 3:4, corporate 4:5 and ID 35×45 crops, centred on your face.</p></div>
+      </div>
+      <div class="privacy-band">
+        <h3>Your photo, your call</h3>
+        <p>Photos open in your browser. Nothing is uploaded unless you pick an AI tool and agree; AI uploads are deleted right after processing. You can delete everything from this device at any time.</p>
+        <p><a href="/privacy">How we handle photos</a></p>
+      </div>
+      <footer class="site-footer">
+        <span>© <span id="year"></span> CAREer Studio</span>
+        <a href="/privacy">Privacy</a>
+        <a href="/profile#contact">Contact &amp; apply</a>
+      </footer>
+    </section>
+  </main>
+</body>
+</html>

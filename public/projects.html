@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Projects — CAREer Studio</title>
+  <meta name="theme-color" content="#faf2eb">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/projects.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" data-brand aria-label="CAREer Studio home"></a>
+    <nav class="top-links" data-top-links aria-label="Main"></nav>
+    <a class="round-btn" href="/profile#data" aria-label="Privacy and settings" data-icon="gear"></a>
+  </header>
+  <main class="page wrap">
+    <div class="page-head">
+      <h1>Projects</h1>
+      <p>Photos you saved from the editor. They are stored only in this browser on this device.</p>
+    </div>
+    <div id="list" class="grid-cards" aria-live="polite"></div>
+    <div id="empty" class="empty" hidden>
+      <span data-icon="image"></span>
+      <h2>No saved photos yet</h2>
+      <p>Edit a photo and choose “Save to Projects” from the ⋯ menu to keep it here.</p>
+      <a class="btn btn-shine" href="/editor"><span>Create a professional photo</span></a>
+    </div>
+    <p id="bulk" hidden><button class="btn btn-quiet btn-danger" id="delete-all" type="button">Delete all saved photos</button></p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Profile — CAREer Studio</title>
+  <meta name="theme-color" content="#faf2eb">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/profile.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" data-brand aria-label="CAREer Studio home"></a>
+    <nav class="top-links" data-top-links aria-label="Main"></nav>
+    <span></span>
+  </header>
+  <main class="page wrap stack">
+    <div class="page-head">
+      <h1>Profile</h1>
+      <p>Get in touch, apply, and manage the data this site keeps on your device.</p>
+    </div>
+
+    <section class="card stack" id="contact" aria-labelledby="contact-h">
+      <h2 id="contact-h">Contact &amp; apply</h2>
+      <div class="notice warn" id="contact-off" hidden></div>
+      <form id="contact-form" class="stack" novalidate>
+        <div class="segmented" role="group" aria-label="Request type">
+          <button type="button" data-kind="enquiry" aria-pressed="true">Enquiry</button>
+          <button type="button" data-kind="application" aria-pressed="false">Application</button>
+        </div>
+        <div class="field"><label for="f-name">Your name</label><input class="input" id="f-name" name="name" autocomplete="name" required maxlength="100"><span class="err" data-err="name"></span></div>
+        <div class="field"><label for="f-email">Email</label><input class="input" id="f-email" name="email" type="email" autocomplete="email" required maxlength="254"><span class="err" data-err="email"></span></div>
+        <div class="field"><label for="f-phone">Phone <span class="hint">(optional)</span></label><input class="input" id="f-phone" name="phone" type="tel" autocomplete="tel" maxlength="30"><span class="err" data-err="phone"></span></div>
+        <div class="field" data-for="enquiry"><label for="f-company">Company <span class="hint">(optional)</span></label><input class="input" id="f-company" name="company" autocomplete="organization" maxlength="120"></div>
+        <div class="field" data-for="application" hidden><label for="f-position">Role you're applying for</label><input class="input" id="f-position" name="position" maxlength="120"><span class="err" data-err="position"></span></div>
+        <div class="field"><label for="f-message">Message</label><textarea class="textarea" id="f-message" name="message" required maxlength="3000"></textarea><span class="err" data-err="message"></span></div>
+        <div class="field" data-for="application" hidden>
+          <label for="f-cv">CV <span class="hint">(optional · PDF or Word, up to 5 MB)</span></label>
+          <input class="input" id="f-cv" name="cv" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+          <span class="err" data-err="cv"></span>
+        </div>
+
+        <fieldset class="card stack" id="photo-box">
+          <legend class="label">Add your photo <span class="hint">(optional)</span></legend>
+          <p class="hint">Photos are never attached unless you choose one <em>and</em> tick the sharing box below.</p>
+          <div class="row-wrap">
+            <button class="btn btn-sm" type="button" id="pick-project">Use my latest saved photo</button>
+            <label class="btn btn-sm" for="f-photo">Choose a photo file</label>
+            <input class="sr-only" id="f-photo" type="file" accept="image/jpeg,image/png,image/webp">
+            <button class="btn btn-sm btn-quiet" type="button" id="photo-clear" hidden>Remove photo</button>
+          </div>
+          <img id="photo-preview" alt="Photo to attach" hidden>
+          <label class="check" id="photo-consent-row" hidden><input type="checkbox" id="f-photo-consent"><span>I agree to send this photo to the CAREer Studio team via Telegram for this request. I can ask for it to be deleted at any time.</span></label>
+          <span class="err" data-err="photoConsent"></span><span class="err" data-err="photo"></span>
+        </fieldset>
+
+        <label class="check"><input type="checkbox" id="f-consent" required><span>CAREer Studio may use these details to reply to this request.</span></label>
+        <span class="err" data-err="consent"></span>
+        <div class="sr-only" aria-hidden="true"><label for="f-website">Website</label><input id="f-website" name="website" tabindex="-1" autocomplete="off"></div>
+        <p class="hint">Your message is delivered to the CAREer Studio team in Telegram, which stores it on Telegram's servers.</p>
+        <div class="notice" id="form-status" role="status" hidden></div>
+        <button class="btn btn-shine" type="submit" id="submit"><span id="submit-label">Send enquiry</span></button>
+      </form>
+    </section>
+
+    <section class="card stack" id="data" aria-labelledby="data-h">
+      <h2 id="data-h">Your data</h2>
+      <ul class="status-list">
+        <li><span>Saved photos (Projects)</span><span id="data-projects">—</span></li>
+        <li><span>AI consent for this visit</span><span id="data-consent">—</span></li>
+        <li><span>Photos held on our server</span><span>Only while an AI edit runs; deleted after</span></li>
+      </ul>
+      <div class="row-wrap">
+        <button class="btn btn-danger" type="button" id="delete-everything" data-icon="trash">Delete everything on this device</button>
+        <button class="btn btn-quiet" type="button" id="withdraw">Withdraw AI consent</button>
+      </div>
+      <p class="hint">Deleting removes saved photos, settings and consent from this browser and tells our server to discard any AI edit still in progress. It cannot be undone. <a href="/privacy">Privacy notice</a></p>
+    </section>
+
+    <section class="card stack" aria-labelledby="svc-h">
+      <h2 id="svc-h">Service status</h2>
+      <ul class="status-list" id="services"></ul>
+    </section>
+  </main>
+</body>
+</html>
